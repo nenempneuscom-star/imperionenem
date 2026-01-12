@@ -30,6 +30,8 @@ import {
   Building2,
   HandCoins,
   Gift,
+  Wrench,
+  FileCheck,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -47,6 +49,7 @@ const menuItems = [
     title: 'Cadastros',
     items: [
       { title: 'Produtos', href: '/dashboard/produtos', icon: Package },
+      { title: 'Serviços', href: '/dashboard/servicos', icon: Wrench },
       { title: 'Clientes', href: '/dashboard/clientes', icon: Users },
       { title: 'Fornecedores', href: '/dashboard/fornecedores', icon: Truck },
       { title: 'Fidelidade', href: '/dashboard/fidelidade', icon: Gift },
@@ -72,6 +75,7 @@ const menuItems = [
     items: [
       { title: 'NFC-e', href: '/dashboard/fiscal/nfce', icon: FileText },
       { title: 'NF-e', href: '/dashboard/fiscal/nfe', icon: FileText },
+      { title: 'NFS-e', href: '/dashboard/fiscal/nfse', icon: FileCheck },
       { title: 'Configurações Fiscais', href: '/dashboard/fiscal/configuracoes', icon: Settings },
     ],
   },
