@@ -33,6 +33,9 @@ interface DadosRecibo {
   subtotal: number
   desconto: number
   total: number
+  // Tributos (Lei 12.741/2012 - IBPT)
+  valorTributos?: number
+  percentualTributos?: number
   // Pagamentos
   pagamentos: PagamentoRecibo[]
   valorRecebido?: number
@@ -105,6 +108,8 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
       subtotal,
       desconto,
       total,
+      valorTributos,
+      percentualTributos,
       pagamentos,
       valorRecebido,
       troco,
@@ -240,6 +245,24 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           <span>{formatCurrency(total)}</span>
         </div>
 
+        {/* Tributos - Lei 12.741/2012 (IBPT) */}
+        {valorTributos !== undefined && valorTributos > 0 && (
+          <div style={{
+            marginTop: '8px',
+            padding: '4px',
+            backgroundColor: '#f5f5f5',
+            fontSize: largura === '58mm' ? '9px' : '10px',
+          }}>
+            <div style={{ fontWeight: 'bold' }}>
+              Val. Aprox. Tributos: {formatCurrency(valorTributos)}
+              {percentualTributos !== undefined && ` (${percentualTributos.toFixed(2)}%)`}
+            </div>
+            <div style={{ fontSize: largura === '58mm' ? '7px' : '8px' }}>
+              Fonte: IBPT - Lei 12.741/2012
+            </div>
+          </div>
+        )}
+
         <div>{separador}</div>
 
         {/* Pagamentos */}
@@ -338,6 +361,8 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
     subtotal,
     desconto,
     total,
+    valorTributos,
+    percentualTributos,
     pagamentos,
     valorRecebido,
     troco,
@@ -463,6 +488,16 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
         <span>TOTAL:</span>
         <span>${formatCurrency(total)}</span>
       </div>
+
+      ${valorTributos && valorTributos > 0 ? `
+        <!-- Tributos - Lei 12.741/2012 (IBPT) -->
+        <div style="margin-top: 8px; padding: 4px; background-color: #f5f5f5; font-size: ${fontSizeSmall};">
+          <div class="bold">
+            Val. Aprox. Tributos: ${formatCurrency(valorTributos)}${percentualTributos ? ` (${percentualTributos.toFixed(2)}%)` : ''}
+          </div>
+          <div style="font-size: 8px;">Fonte: IBPT - Lei 12.741/2012</div>
+        </div>
+      ` : ''}
 
       <div class="separator">${separador}</div>
 

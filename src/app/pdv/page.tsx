@@ -61,6 +61,7 @@ interface Produto {
   preco_venda: number
   estoque_atual: number
   unidade: string
+  ncm?: string
 }
 
 interface Cliente {
@@ -146,6 +147,8 @@ export default function PDVPage() {
     valorRecebido?: number
     troco?: number
     operador: string
+    valorTributos?: number
+    percentualTributos?: number
   } | null>(null)
 
   const {
@@ -307,6 +310,37 @@ export default function PDVPage() {
     }).format(value)
   }
 
+  // Calcula tributos IBPT para os itens do carrinho
+  async function calcularTributosIBPT(): Promise<{ valorTributos: number; percentualTributos: number }> {
+    let totalTributos = 0
+    let totalProdutos = 0
+
+    for (const item of items) {
+      const valorItem = item.preco * item.quantidade
+      totalProdutos += valorItem
+
+      if (item.ncm) {
+        try {
+          const response = await fetch(`/api/ibpt?ncm=${item.ncm.replace(/\D/g, '')}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.aliquota_total) {
+              totalTributos += valorItem * (data.aliquota_total / 100)
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao buscar alíquota IBPT:', error)
+        }
+      }
+    }
+
+    const percentual = totalProdutos > 0 ? (totalTributos / totalProdutos) * 100 : 0
+    return {
+      valorTributos: totalTributos,
+      percentualTributos: percentual,
+    }
+  }
+
   // Verifica se o produto é vendido por peso/volume
   function isProdutoPesavel(unidade: string): boolean {
     const unidadesPesaveis = ['KG', 'G', 'L', 'ML', 'M', 'CM', 'M2', 'M3']
@@ -350,6 +384,7 @@ export default function PDVPage() {
       preco: pendingWeightProduct.preco_venda,
       quantidade: peso,
       unidade: pendingWeightProduct.unidade,
+      ncm: pendingWeightProduct.ncm,
     })
 
     const valorTotal = pendingWeightProduct.preco_venda * peso
@@ -406,7 +441,7 @@ export default function PDVPage() {
         // Busca exata por código de barras
         const { data, error } = await supabase
           .from('produtos')
-          .select('id, codigo, codigo_barras, nome, preco_venda, estoque_atual, unidade')
+          .select('id, codigo, codigo_barras, nome, preco_venda, estoque_atual, unidade, ncm')
           .eq('ativo', true)
           .eq('codigo_barras', codigoBarras)
           .single()
@@ -450,6 +485,7 @@ export default function PDVPage() {
             nome: produto.nome,
             preco: produto.preco_venda,
             unidade: produto.unidade,
+            ncm: produto.ncm,
           })
           playBeep(true)
           toast.success(produto.nome, {
@@ -557,7 +593,7 @@ export default function PDVPage() {
         // Busca online
         const { data, error } = await supabase
           .from('produtos')
-          .select('id, codigo, codigo_barras, nome, preco_venda, estoque_atual, unidade')
+          .select('id, codigo, codigo_barras, nome, preco_venda, estoque_atual, unidade, ncm')
           .eq('ativo', true)
           .or(`codigo.ilike.%${termo}%,codigo_barras.eq.${termo},nome.ilike.%${termo}%`)
           .order('nome')
@@ -644,6 +680,7 @@ export default function PDVPage() {
       nome: produto.nome,
       preco: produto.preco_venda,
       unidade: produto.unidade,
+      ncm: produto.ncm,
     })
 
     playBeep(true)
@@ -1057,6 +1094,14 @@ export default function PDVPage() {
         })
       }
 
+      // Calcular tributos IBPT (Lei 12.741/2012)
+      let tributos = { valorTributos: 0, percentualTributos: 0 }
+      try {
+        tributos = await calcularTributosIBPT()
+      } catch (error) {
+        console.error('Erro ao calcular tributos IBPT:', error)
+      }
+
       // Salvar dados da venda para impressão
       setVendaFinalizada({
         numero: vendaNumero,
@@ -1074,6 +1119,8 @@ export default function PDVPage() {
         valorRecebido: selectedPayment === 'dinheiro' ? parseFloat(valorRecebido || '0') : undefined,
         troco: selectedPayment === 'dinheiro' && troco > 0 ? troco : undefined,
         operador: operadorNome,
+        valorTributos: tributos.valorTributos,
+        percentualTributos: tributos.percentualTributos,
       })
 
       setPaymentSuccess(true)
@@ -1131,6 +1178,8 @@ export default function PDVPage() {
       subtotal: vendaFinalizada.subtotal,
       desconto: vendaFinalizada.desconto,
       total: vendaFinalizada.total,
+      valorTributos: vendaFinalizada.valorTributos,
+      percentualTributos: vendaFinalizada.percentualTributos,
       pagamentos: vendaFinalizada.pagamentos,
       valorRecebido: vendaFinalizada.valorRecebido,
       troco: vendaFinalizada.troco,

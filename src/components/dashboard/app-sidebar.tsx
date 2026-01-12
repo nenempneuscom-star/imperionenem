@@ -32,6 +32,7 @@ import {
   Gift,
   Wrench,
   FileCheck,
+  Calculator,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -76,6 +77,7 @@ const menuItems = [
       { title: 'NFC-e', href: '/dashboard/fiscal/nfce', icon: FileText },
       { title: 'NF-e', href: '/dashboard/fiscal/nfe', icon: FileText },
       { title: 'NFS-e', href: '/dashboard/fiscal/nfse', icon: FileCheck },
+      { title: 'Tabela IBPT', href: '/dashboard/configuracoes/ibpt', icon: Calculator },
       { title: 'Configurações Fiscais', href: '/dashboard/fiscal/configuracoes', icon: Settings },
     ],
   },

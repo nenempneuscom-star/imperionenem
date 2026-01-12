@@ -7,6 +7,7 @@ export interface CartItem {
   preco: number
   quantidade: number
   unidade?: string // UN, KG, L, etc.
+  ncm?: string // Código NCM para cálculo IBPT
 }
 
 interface CartStore {
