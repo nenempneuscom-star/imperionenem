@@ -33,6 +33,7 @@ import {
   Wrench,
   FileCheck,
   Calculator,
+  Percent,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -85,6 +86,13 @@ const menuItems = [
     title: 'Relatórios',
     items: [
       { title: 'Relatórios', href: '/dashboard/relatorios', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'Configurações',
+    items: [
+      { title: 'Desconto', href: '/dashboard/configuracoes/desconto', icon: Percent },
+      { title: 'Geral', href: '/dashboard/configuracoes', icon: Settings },
     ],
   },
 ]

@@ -49,9 +49,11 @@ import {
   Keyboard,
   Scan,
   Scale,
+  Percent,
 } from 'lucide-react'
 import { printReceipt, type DadosRecibo } from '@/components/pdv/receipt'
 import { PixQRCode } from '@/components/pdv/pix-qrcode'
+import { DiscountModal } from '@/components/pdv/discount-modal'
 
 interface Produto {
   id: string
@@ -93,6 +95,16 @@ interface NFCeResult {
   mensagem: string
 }
 
+interface ConfigDesconto {
+  desconto_maximo_percentual: number
+  desconto_maximo_valor: number | null
+  motivo_obrigatorio: boolean
+  permitir_desconto_item: boolean
+  permitir_desconto_total: boolean
+  requer_autorizacao_acima_percentual: number | null
+  motivos_predefinidos: string[]
+}
+
 export default function PDVPage() {
   const supabase = createClient()
   const searchRef = useRef<HTMLInputElement>(null)
@@ -132,6 +144,15 @@ export default function PDVPage() {
   const [pontosGanhos, setPontosGanhos] = useState<number | null>(null)
   const [showAjuda, setShowAjuda] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)
+  // Estados para desconto
+  const [configDesconto, setConfigDesconto] = useState<ConfigDesconto | null>(null)
+  const [showDescontoModal, setShowDescontoModal] = useState(false)
+  const [itemDesconto, setItemDesconto] = useState<{
+    id: string
+    nome: string
+    preco: number
+    quantidade: number
+  } | null>(null)
   // Estados para produto pesável
   const [showWeightModal, setShowWeightModal] = useState(false)
   const [pendingWeightProduct, setPendingWeightProduct] = useState<Produto | null>(null)
@@ -154,6 +175,7 @@ export default function PDVPage() {
   const {
     items,
     desconto,
+    descontoGeral,
     addItem,
     removeItem,
     updateQuantity,
@@ -161,6 +183,12 @@ export default function PDVPage() {
     getSubtotal,
     getTotal,
     getTotalItems,
+    getDescontoItens,
+    getDescontoTotal,
+    setDescontoGeral,
+    clearDescontoGeral,
+    setDescontoItem,
+    clearDescontoItem,
   } = useCartStore()
 
   const {
@@ -301,7 +329,21 @@ export default function PDVPage() {
       }
     }
     verificarCaixa()
+    carregarConfigDesconto()
   }, [])
+
+  // Carregar configuracao de desconto
+  async function carregarConfigDesconto() {
+    try {
+      const response = await fetch('/api/configuracoes/desconto')
+      if (response.ok) {
+        const data = await response.json()
+        setConfigDesconto(data)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar config desconto:', error)
+    }
+  }
 
   function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', {
@@ -838,6 +880,11 @@ export default function PDVPage() {
                             selectedPayment === 'pix' ? 'pix' :
                             selectedPayment === 'crediario' ? 'crediario' : 'dinheiro'
 
+      // Calcular desconto total (itens + geral)
+      const descontoItensTotal = getDescontoItens()
+      const descontoGeralValor = descontoGeral.valor
+      const descontoTotal = descontoItensTotal + descontoGeralValor
+
       const vendaData = {
         tempId: `venda-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         itens: items.map((item) => ({
@@ -846,15 +893,19 @@ export default function PDVPage() {
           nome: item.nome,
           quantidade: item.quantidade,
           preco_unitario: item.preco,
-          desconto: 0,
-          total: item.preco * item.quantidade,
+          desconto: item.desconto || 0,
+          desconto_percentual: item.descontoPercentual || 0,
+          desconto_motivo: item.descontoMotivo || null,
+          total: (item.preco * item.quantidade) - (item.desconto || 0),
         })),
         pagamentos: [{
           forma: formaPagamento,
           valor: total,
         }],
         subtotal,
-        desconto,
+        desconto: descontoTotal,
+        desconto_percentual: descontoGeral.percentual,
+        desconto_motivo: descontoGeral.motivo || null,
         total,
         usuario_id: usuarioId,
       }
@@ -878,7 +929,9 @@ export default function PDVPage() {
               usuario_id: userData.id,
               caixa_id: caixaAberto?.id || null,
               subtotal,
-              desconto,
+              desconto: descontoTotal,
+              desconto_percentual: descontoGeral.percentual || 0,
+              desconto_motivo: descontoGeral.motivo || null,
               total,
               status: 'finalizada',
               tipo_documento: emitirNFCe && fiscalConfigurado ? 'nfce' : 'sem_nota',
@@ -909,8 +962,10 @@ export default function PDVPage() {
             produto_id: item.id,
             quantidade: item.quantidade,
             preco_unitario: item.preco,
-            desconto: 0,
-            total: item.preco * item.quantidade,
+            desconto: item.desconto || 0,
+            desconto_percentual: item.descontoPercentual || 0,
+            desconto_motivo: item.descontoMotivo || null,
+            total: (item.preco * item.quantidade) - (item.desconto || 0),
           }))
 
           const { error: itensError } = await supabase
@@ -1110,10 +1165,10 @@ export default function PDVPage() {
           nome: item.nome,
           quantidade: item.quantidade,
           preco: item.preco,
-          total: item.preco * item.quantidade,
+          total: (item.preco * item.quantidade) - (item.desconto || 0),
         })),
         subtotal,
-        desconto,
+        desconto: descontoTotal,
         total,
         pagamentos: [{ forma: formaPagamento, valor: total }],
         valorRecebido: selectedPayment === 'dinheiro' ? parseFloat(valorRecebido || '0') : undefined,
@@ -1277,11 +1332,22 @@ export default function PDVPage() {
           e.preventDefault()
           window.location.href = '/pdv/caixa'
           break
+        case 'd':
+        case 'D':
+          // Ctrl+D para desconto no total
+          if (e.ctrlKey && items.length > 0) {
+            e.preventDefault()
+            setItemDesconto(null)
+            setShowDescontoModal(true)
+          }
+          break
         case 'Escape':
           if (showAjuda) {
             setShowAjuda(false)
           } else if (showClienteModal) {
             setShowClienteModal(false)
+          } else if (showDescontoModal) {
+            setShowDescontoModal(false)
           } else if (selectedPayment) {
             setSelectedPayment(null)
             setValorRecebido('')
@@ -1294,7 +1360,7 @@ export default function PDVPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [items, selectedPayment, clienteSelecionado, fidelidadeConfig, showAjuda, showClienteModal, clearCart, paymentLoading, troco, finalizarVenda])
+  }, [items, selectedPayment, clienteSelecionado, fidelidadeConfig, showAjuda, showClienteModal, showDescontoModal, clearCart, paymentLoading, troco, finalizarVenda])
 
   return (
     <div className="flex h-screen">
@@ -1522,9 +1588,41 @@ export default function PDVPage() {
                             </>
                           )}
                         </div>
-                        <p className="font-bold text-lg w-28 text-right">
-                          {formatCurrency(item.preco * item.quantidade)}
-                        </p>
+                        <div className="w-28 text-right">
+                          <p className="font-bold text-lg">
+                            {formatCurrency((item.preco * item.quantidade) - (item.desconto || 0))}
+                          </p>
+                          {item.desconto && item.desconto > 0 && (
+                            <p className="text-xs text-destructive">
+                              -{formatCurrency(item.desconto)} ({item.descontoPercentual?.toFixed(1)}%)
+                            </p>
+                          )}
+                        </div>
+                        {/* Botao de desconto por item */}
+                        {configDesconto?.permitir_desconto_item && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-8 w-8 ${item.desconto ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'}`}
+                            onClick={() => {
+                              if (item.desconto) {
+                                clearDescontoItem(item.id)
+                                toast.success('Desconto removido')
+                              } else {
+                                setItemDesconto({
+                                  id: item.id,
+                                  nome: item.nome,
+                                  preco: item.preco,
+                                  quantidade: item.quantidade,
+                                })
+                                setShowDescontoModal(true)
+                              }
+                            }}
+                            title={item.desconto ? 'Remover desconto' : 'Aplicar desconto'}
+                          >
+                            <Percent className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -1565,7 +1663,23 @@ export default function PDVPage() {
             <div className="mt-3 flex items-baseline justify-between">
               <div className="text-sm text-muted-foreground">
                 <div>Subtotal: {formatCurrency(subtotal)}</div>
-                {desconto > 0 && <div>Desconto: -{formatCurrency(desconto)}</div>}
+                {getDescontoItens() > 0 && (
+                  <div className="text-destructive">Desc. Itens: -{formatCurrency(getDescontoItens())}</div>
+                )}
+                {descontoGeral.valor > 0 && (
+                  <div className="text-destructive flex items-center gap-1">
+                    Desc. Geral: -{formatCurrency(descontoGeral.valor)}
+                    <button
+                      onClick={() => {
+                        clearDescontoGeral()
+                        toast.success('Desconto removido')
+                      }}
+                      className="text-xs hover:underline"
+                    >
+                      (remover)
+                    </button>
+                  </div>
+                )}
                 {descontoPontos > 0 && <div className="text-amber-600">Pontos: -{formatCurrency(descontoPontos)}</div>}
               </div>
               <div className="text-3xl font-bold text-primary">{formatCurrency(total)}</div>
@@ -1627,6 +1741,26 @@ export default function PDVPage() {
               ) : (
                 <p className="text-xs text-muted-foreground">Identifique para usar pontos ou crediário</p>
               )}
+            </div>
+          )}
+
+          {/* Botao de Desconto */}
+          {items.length > 0 && configDesconto?.permitir_desconto_total && (
+            <div className="p-3 border-b">
+              <Button
+                variant={descontoGeral.valor > 0 ? 'destructive' : 'outline'}
+                className="w-full"
+                onClick={() => {
+                  setItemDesconto(null)
+                  setShowDescontoModal(true)
+                }}
+              >
+                <Percent className="h-4 w-4 mr-2" />
+                {descontoGeral.valor > 0
+                  ? `Desconto: ${formatCurrency(descontoGeral.valor)} (${descontoGeral.percentual.toFixed(1)}%)`
+                  : 'Aplicar Desconto (Ctrl+D)'
+                }
+              </Button>
             </div>
           )}
 
@@ -2212,7 +2346,11 @@ export default function PDVPage() {
                 <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F12</kbd>
                 <span>Abrir/Fechar Caixa</span>
               </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted col-span-2">
+              <div className="flex items-center gap-2 p-2 rounded bg-muted">
+                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">Ctrl+D</kbd>
+                <span>Aplicar Desconto</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded bg-muted">
                 <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">ESC</kbd>
                 <span>Fechar modal / Cancelar</span>
               </div>
@@ -2226,6 +2364,21 @@ export default function PDVPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Desconto */}
+      <DiscountModal
+        open={showDescontoModal}
+        onOpenChange={setShowDescontoModal}
+        config={configDesconto}
+        subtotal={subtotal}
+        item={itemDesconto || undefined}
+        onApplyDiscount={(valor, percentual, motivo) => {
+          setDescontoGeral({ valor, percentual, motivo })
+        }}
+        onApplyItemDiscount={(itemId, valor, percentual, motivo) => {
+          setDescontoItem(itemId, valor, percentual, motivo)
+        }}
+      />
     </div>
   )
 }
