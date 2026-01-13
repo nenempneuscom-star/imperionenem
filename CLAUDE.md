@@ -31,9 +31,15 @@ src/
 │   └── login/
 ├── components/
 │   ├── ui/                # Componentes shadcn/ui
-│   ├── pdv/               # Componentes do PDV
+│   ├── pdv/               # Componentes do PDV (modais, busca, etc)
 │   ├── relatorios/        # Componentes de relatorios
+│   │   ├── tabs/          # 14 componentes de tab
+│   │   ├── date-filter.tsx
+│   │   ├── stats-card.tsx
+│   │   └── types.ts       # Tipos compartilhados
 │   └── configuracoes/     # Componentes de configuracoes
+│       ├── tabs/          # EmpresaTab, EnderecoTab, FiscalTab, SistemaTab
+│       └── types.ts
 ├── lib/
 │   ├── supabase/          # Cliente Supabase
 │   ├── fiscal/            # Logica fiscal (NF-e, NFC-e)
@@ -71,12 +77,21 @@ src/
 - Emissao de NFC-e
 
 ### Relatorios (`/dashboard/relatorios`)
-- Vendas por periodo
-- Pagamentos
-- Curva ABC
-- Descontos
-- Crediario
-- Estoque critico
+14 tabs de relatorios, cada uma com componente modular em `components/relatorios/tabs/`:
+- **Vendas:** VendasTab - vendas por periodo
+- **Itens Vendidos:** ItensVendidosTab - detalhamento de itens
+- **Descontos:** DescontosTab - analise de descontos
+- **Pagamentos:** PagamentosTab - formas de pagamento
+- **Crediario:** CrediarioTab - vendas a prazo
+- **Clientes:** ClientesTab - analise de clientes
+- **Operacional:** OperacionalTab - metricas operacionais
+- **Mais Vendidos:** MaisVendidosTab - ranking de produtos
+- **Curva ABC:** CurvaABCTab - classificacao 80-15-5
+- **Estoque Critico:** EstoqueCriticoTab - alertas de estoque
+- **Produtos:** ProdutosTab - posicao de estoque
+- **Saude Financeira:** SaudeTab - DRE simplificado
+- **Fiscal:** FiscalTab - NFC-e, NF-e, impostos
+- **Financeiro:** FinanceiroTab - faturamento e margem
 
 ### Configuracoes (`/dashboard/configuracoes`)
 - Dados da empresa
@@ -111,7 +126,30 @@ npm run lint     # Verificar linting
 
 ## Observacoes para o Claude Code
 
-1. **Arquivos grandes:** `relatorios/page.tsx` ainda tem 2670 linhas e pode ser modularizado
-2. **Componentes modulares:** PDV e Configuracoes ja foram refatorados em componentes
-3. **Tipos compartilhados:** Usar exports de `@/components/*/types.ts`
-4. **Idioma:** Interface em portugues brasileiro (sem acentos em codigo)
+1. **Componentes modulares:** PDV, Configuracoes e Relatorios ja foram refatorados em componentes
+2. **Tipos compartilhados:** Usar exports de `@/components/*/types.ts`
+3. **Idioma:** Interface em portugues brasileiro (sem acentos em codigo)
+4. **Padrao de tabs:** Componentes de tab usam render props (`filterComponent`, `exportButton`)
+
+## Arquitetura de Componentes
+
+### Padrao de Tab Components
+```tsx
+interface TabProps {
+  dados: TipoDados | null
+  loading: boolean
+  filterComponent: React.ReactNode  // FiltroData ou Button
+  exportButton?: React.ReactNode    // Botao de exportar Excel
+}
+```
+
+### Imports Centralizados
+```tsx
+// Importar tudo de um modulo
+import {
+  VendasTab,
+  PagamentosTab,
+  type VendaRelatorio,
+  formatCurrency,
+} from '@/components/relatorios'
+```
