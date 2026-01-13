@@ -71,12 +71,21 @@ src/
 │   └── nfse/              # Emissao de NFS-e
 │       ├── tomador-card.tsx
 │       ├── servico-card.tsx
-│       ├── valores-card.tsx
+│       ├── valores-card.tsx   # Inclui IBS/CBS (Reforma 2026)
+│       ├── status-card.tsx    # Status da NFS-e
 │       ├── form-actions.tsx
-│       └── types.ts
+│       └── types.ts           # Tipos + ADN + IBS/CBS
 ├── lib/
 │   ├── supabase/          # Cliente Supabase
 │   ├── fiscal/            # Logica fiscal (NF-e, NFC-e)
+│   ├── nfse/              # Modulo NFS-e
+│   │   ├── types.ts       # Tipos ABRASF (legado)
+│   │   ├── xml-generator.ts # Gerador XML ABRASF
+│   │   └── adn/           # ADN - Ambiente de Dados Nacional
+│   │       ├── types.ts       # Tipos DPS, IBS/CBS
+│   │       ├── dps-generator.ts # Gerador XML/JSON DPS
+│   │       ├── api-client.ts  # Cliente API ADN
+│   │       └── index.ts
 │   ├── hooks/             # Custom hooks
 │   └── utils/             # Utilitarios
 ├── stores/                # Zustand stores
@@ -173,12 +182,31 @@ Produtos resgataveis (`/dashboard/fidelidade/produtos`):
 NFS-e (`/dashboard/fiscal/nfse/nova`) - modularizado em `components/nfse`:
 - **TomadorCard:** Dados do tomador com busca de cliente e CEP
 - **ServicoCard:** Selecao de servico (LC 116) e discriminacao
-- **ValoresCard:** Valores, impostos, retencoes e resumo de calculo
+- **ValoresCard:** Valores, ISS, IBS/CBS (Reforma 2026), retencoes e resumo
+- **StatusCard:** Exibe status da NFS-e apos envio (autorizada, rejeitada, etc)
 - **FormActions:** Botoes cancelar/gerar RPS
+
+**ADN - Ambiente de Dados Nacional (NFS-e Padrao Nacional 2026):**
+
+API Route (`/api/nfse/adn`):
+- POST: Emitir NFS-e via ADN (gera DPS, envia ao sistema nacional)
+- GET: Consultar NFS-e por chave de acesso
+- DELETE: Cancelar NFS-e
+
+Modulo `lib/nfse/adn`:
+- **types.ts:** Tipos DPS, IBS, CBS, ADNClient, endpoints
+- **dps-generator.ts:** Gera XML/JSON do DPS conforme especificacao ADN
+- **api-client.ts:** Cliente REST para comunicacao com o ADN
+
+Reforma Tributaria 2026 (EC 132/2023):
+- **IBS:** Imposto sobre Bens e Servicos (substitui ICMS/ISS) - 17.7% padrao
+- **CBS:** Contribuicao sobre Bens e Servicos (substitui PIS/COFINS) - 8.8% padrao
+- Campos de retencao IBS/CBS no tomador
+- Calculo automatico de carga tributaria (transparencia fiscal)
 
 Configuracoes fiscais (`/dashboard/fiscal/configuracoes`) - modularizado em `components/fiscal-config`:
 - **GeralTab:** Regime tributario, ambiente (producao/homologacao)
-- **CertificadoTab:** Upload e status do certificado digital
+- **CertificadoTab:** Upload e status do certificado digital A1
 - **NFCeTab:** Serie, CSC, CFOP para NFC-e
 - **NFeTab:** Serie, CFOP para NF-e
 
@@ -231,7 +259,8 @@ npm run lint     # Verificar linting
    - `fiscal-config` - 4 tabs de configuracoes fiscais
    - `fidelidade` - 2 tabs + 1 modal + 4 componentes de produtos
    - `orcamentos` - 14 componentes (cliente, itens, modals, cards)
-   - `nfse` - 4 cards + tipos + utilitarios de calculo
+   - `nfse` - 5 cards + tipos + ADN + IBS/CBS + utilitarios
+   - `lib/nfse/adn` - Integracao ADN (DPS, API client, XML/JSON)
 2. **Tipos compartilhados:** Usar exports de `@/components/*/types.ts`
 3. **Idioma:** Interface em portugues brasileiro (sem acentos em codigo)
 4. **Padrao de tabs:** Componentes de tab usam render props (`filterComponent`, `exportButton`)
@@ -310,17 +339,39 @@ import {
   getStatusConfig,
 } from '@/components/orcamentos'
 
-// Importar de nfse
+// Importar de nfse (componentes UI)
 import {
   TomadorCard,
   ServicoCard,
   ValoresCard,
   FormActions,
+  StatusCard,
   type Servico,
   type ClienteNFSe,
   type NFSeFormData,
+  type StatusNFSeADN,
   FORM_DATA_INICIAL,
+  ALIQUOTA_IBS_PADRAO,
+  ALIQUOTA_CBS_PADRAO,
   calcularBaseCalculo,
+  calcularValorIbs,
+  calcularValorCbs,
   calcularValorLiquido,
 } from '@/components/nfse'
+
+// Importar de lib/nfse/adn (integracao ADN)
+import {
+  converterParaDPS,
+  gerarXMLDPS,
+  gerarJSONDPS,
+  validarDPS,
+  ADNClient,
+  getADNClient,
+  validarChaveAcesso,
+  type DPS,
+  type DPSPrestador,
+  type DPSTomador,
+  type AmbienteADN,
+  type ADNErro,
+} from '@/lib/nfse/adn'
 ```

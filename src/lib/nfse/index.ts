@@ -1,6 +1,12 @@
 // =============================================
-// MÓDULO NFS-e - IMPÉRIO SISTEMAS
+// MODULO NFS-e - IMPERIO SISTEMAS
 // =============================================
 
-export * from './types';
-export * from './xml-generator';
+// Tipos ABRASF (legado)
+export * from './types'
+
+// Gerador XML ABRASF (legado)
+export * from './xml-generator'
+
+// ADN - Ambiente de Dados Nacional (Padrao Nacional 2026)
+export * from './adn'
