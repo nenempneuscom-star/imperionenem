@@ -40,6 +40,8 @@ export async function GET(request: NextRequest) {
         return await getRelatorioSaudeFinanceira(supabase, usuario.empresa_id, dataInicio, dataFim)
       case 'fiscal':
         return await getRelatorioFiscal(supabase, usuario.empresa_id, dataInicio, dataFim)
+      case 'cancelamentos':
+        return await getRelatorioCancelamentos(supabase, usuario.empresa_id, dataInicio, dataFim)
       default:
         return NextResponse.json({ error: 'Tipo de relatorio invalido' }, { status: 400 })
     }
@@ -797,5 +799,238 @@ async function getRelatorioFiscal(supabase: any, empresaId: string, dataInicio: 
     },
     ultimasNfce: nfceEmitidas.slice(0, 10),
     ultimasNfe: nfeEmitidas.slice(0, 10),
+  })
+}
+
+// RELATORIO DE CANCELAMENTOS
+async function getRelatorioCancelamentos(supabase: any, empresaId: string, dataInicio: string | null, dataFim: string | null) {
+  // Buscar vendas canceladas
+  let queryVendas = supabase
+    .from('vendas')
+    .select(`
+      id,
+      numero,
+      data_hora,
+      total,
+      status,
+      observacao,
+      usuarios (nome),
+      clientes (nome),
+      venda_itens (
+        id,
+        quantidade,
+        preco_unitario,
+        total,
+        produtos (codigo, nome)
+      )
+    `)
+    .eq('empresa_id', empresaId)
+    .eq('status', 'cancelada')
+
+  if (dataInicio) queryVendas = queryVendas.gte('data_hora', `${dataInicio}T00:00:00`)
+  if (dataFim) queryVendas = queryVendas.lte('data_hora', `${dataFim}T23:59:59`)
+
+  const { data: vendasCanceladas, error: vendasError } = await queryVendas.order('data_hora', { ascending: false })
+  if (vendasError) throw vendasError
+
+  // Buscar notas fiscais canceladas
+  let queryNotas = supabase
+    .from('notas_fiscais')
+    .select(`
+      id,
+      tipo,
+      numero,
+      serie,
+      chave,
+      status,
+      valor_total,
+      emitida_em,
+      cancelada_em,
+      motivo_cancelamento,
+      protocolo_cancelamento
+    `)
+    .eq('empresa_id', empresaId)
+    .eq('status', 'cancelada')
+
+  if (dataInicio) queryNotas = queryNotas.gte('cancelada_em', `${dataInicio}T00:00:00`)
+  if (dataFim) queryNotas = queryNotas.lte('cancelada_em', `${dataFim}T23:59:59`)
+
+  const { data: notasCanceladas, error: notasError } = await queryNotas.order('cancelada_em', { ascending: false })
+  if (notasError) throw notasError
+
+  // Buscar total de vendas finalizadas para calcular percentual
+  let queryTotalVendas = supabase
+    .from('vendas')
+    .select('id, total')
+    .eq('empresa_id', empresaId)
+    .in('status', ['finalizada', 'cancelada'])
+
+  if (dataInicio) queryTotalVendas = queryTotalVendas.gte('data_hora', `${dataInicio}T00:00:00`)
+  if (dataFim) queryTotalVendas = queryTotalVendas.lte('data_hora', `${dataFim}T23:59:59`)
+
+  const { data: todasVendas } = await queryTotalVendas
+
+  // Calcular resumo de vendas
+  const totalVendasPeriodo = todasVendas?.length || 0
+  const totalVendasCanceladas = vendasCanceladas?.length || 0
+  const valorTotalCancelado = vendasCanceladas?.reduce((acc: number, v: any) => acc + v.total, 0) || 0
+  const taxaCancelamento = totalVendasPeriodo > 0 ? (totalVendasCanceladas / totalVendasPeriodo) * 100 : 0
+
+  // Calcular resumo de notas
+  const nfcesCanceladas = notasCanceladas?.filter((n: any) => n.tipo === 'nfce') || []
+  const nfesCanceladas = notasCanceladas?.filter((n: any) => n.tipo === 'nfe') || []
+  const valorNfceCancelado = nfcesCanceladas.reduce((acc: number, n: any) => acc + (n.valor_total || 0), 0)
+  const valorNfeCancelado = nfesCanceladas.reduce((acc: number, n: any) => acc + (n.valor_total || 0), 0)
+
+  // Agrupar por motivo
+  const motivosMap: { [key: string]: { motivo: string; quantidade: number; valor: number } } = {}
+
+  // Extrair motivo da observacao das vendas
+  vendasCanceladas?.forEach((v: any) => {
+    let motivo = 'Nao informado'
+    if (v.observacao) {
+      // Tentar extrair o motivo da observacao
+      const match = v.observacao.match(/Cancelada em .+ - (.+)$/i)
+      if (match) {
+        motivo = match[1]
+      } else if (v.observacao.includes('|')) {
+        const parts = v.observacao.split('|')
+        motivo = parts[parts.length - 1].trim()
+      }
+    }
+
+    if (!motivosMap[motivo]) {
+      motivosMap[motivo] = { motivo, quantidade: 0, valor: 0 }
+    }
+    motivosMap[motivo].quantidade++
+    motivosMap[motivo].valor += v.total
+  })
+
+  // Adicionar motivos das notas fiscais
+  notasCanceladas?.forEach((n: any) => {
+    const motivo = n.motivo_cancelamento || 'Nao informado'
+    if (!motivosMap[motivo]) {
+      motivosMap[motivo] = { motivo, quantidade: 0, valor: 0 }
+    }
+    // Nao incrementar quantidade para evitar duplicata, so atualizar se nao tiver venda associada
+  })
+
+  const porMotivo = Object.values(motivosMap).sort((a, b) => b.valor - a.valor)
+
+  // Agrupar por operador
+  const operadoresMap: { [key: string]: { operador: string; quantidade: number; valor: number } } = {}
+  vendasCanceladas?.forEach((v: any) => {
+    const operador = v.usuarios?.nome || 'Desconhecido'
+    if (!operadoresMap[operador]) {
+      operadoresMap[operador] = { operador, quantidade: 0, valor: 0 }
+    }
+    operadoresMap[operador].quantidade++
+    operadoresMap[operador].valor += v.total
+  })
+
+  const porOperador = Object.values(operadoresMap).sort((a, b) => b.valor - a.valor)
+
+  // Agrupar por dia da semana
+  const diasSemana = ['Domingo', 'Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado']
+  const porDia: { [key: number]: { dia: string; quantidade: number; valor: number } } = {}
+  vendasCanceladas?.forEach((v: any) => {
+    const dia = new Date(v.data_hora).getDay()
+    if (!porDia[dia]) {
+      porDia[dia] = { dia: diasSemana[dia], quantidade: 0, valor: 0 }
+    }
+    porDia[dia].quantidade++
+    porDia[dia].valor += v.total
+  })
+
+  const cancelamentosPorDia = Object.values(porDia).sort((a, b) => b.quantidade - a.quantidade)
+
+  // Agrupar por hora
+  const porHora: { [key: number]: { hora: number; quantidade: number; valor: number } } = {}
+  vendasCanceladas?.forEach((v: any) => {
+    const hora = new Date(v.data_hora).getHours()
+    if (!porHora[hora]) {
+      porHora[hora] = { hora, quantidade: 0, valor: 0 }
+    }
+    porHora[hora].quantidade++
+    porHora[hora].valor += v.total
+  })
+
+  const cancelamentosPorHora = Object.values(porHora).sort((a, b) => b.quantidade - a.quantidade).slice(0, 5)
+
+  // Produtos mais cancelados
+  const produtosMap: { [key: string]: { codigo: string; nome: string; quantidade: number; valor: number } } = {}
+  vendasCanceladas?.forEach((v: any) => {
+    v.venda_itens?.forEach((item: any) => {
+      const id = item.produtos?.codigo || 'sem-codigo'
+      if (!produtosMap[id]) {
+        produtosMap[id] = {
+          codigo: item.produtos?.codigo || '-',
+          nome: item.produtos?.nome || 'Produto removido',
+          quantidade: 0,
+          valor: 0
+        }
+      }
+      produtosMap[id].quantidade += item.quantidade
+      produtosMap[id].valor += item.total
+    })
+  })
+
+  const produtosMaisCancelados = Object.values(produtosMap)
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, 10)
+
+  // Formatar vendas para exibicao
+  const vendasFormatadas = vendasCanceladas?.map((v: any) => {
+    let motivo = 'Nao informado'
+    if (v.observacao) {
+      const match = v.observacao.match(/Cancelada em .+ - (.+)$/i)
+      if (match) {
+        motivo = match[1]
+      }
+    }
+    return {
+      id: v.id,
+      numero: v.numero,
+      data_hora: v.data_hora,
+      total: v.total,
+      cliente: v.clientes?.nome || 'Consumidor',
+      operador: v.usuarios?.nome || 'Desconhecido',
+      motivo,
+      itens: v.venda_itens?.length || 0,
+    }
+  }) || []
+
+  // Formatar notas para exibicao
+  const notasFormatadas = notasCanceladas?.map((n: any) => ({
+    id: n.id,
+    tipo: n.tipo === 'nfce' ? 'NFC-e' : 'NF-e',
+    numero: n.numero,
+    serie: n.serie,
+    chave: n.chave,
+    valor: n.valor_total,
+    emitida_em: n.emitida_em,
+    cancelada_em: n.cancelada_em,
+    motivo: n.motivo_cancelamento || 'Nao informado',
+  })) || []
+
+  return NextResponse.json({
+    resumo: {
+      totalVendasPeriodo,
+      totalVendasCanceladas,
+      valorTotalCancelado,
+      taxaCancelamento,
+      ticketMedioCancelado: totalVendasCanceladas > 0 ? valorTotalCancelado / totalVendasCanceladas : 0,
+      nfcesCanceladas: nfcesCanceladas.length,
+      valorNfceCancelado,
+      nfesCanceladas: nfesCanceladas.length,
+      valorNfeCancelado,
+    },
+    porMotivo,
+    porOperador,
+    cancelamentosPorDia,
+    cancelamentosPorHora,
+    produtosMaisCancelados,
+    vendas: vendasFormatadas.slice(0, 50),
+    notas: notasFormatadas.slice(0, 50),
   })
 }

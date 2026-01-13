@@ -1,5 +1,8 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createBrowserClient } from '@supabase/ssr'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -11,31 +14,85 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { FileText, CheckCircle2, XCircle, Clock, AlertTriangle, Download, Eye, Plus } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  FileText,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Download,
+  Eye,
+  Plus,
+  MoreHorizontal,
+  Ban,
+  RefreshCw,
+  Loader2,
+} from 'lucide-react'
+import { CancelarNotaModal } from '@/components/fiscal'
+import { toast } from 'sonner'
 
-export const dynamic = 'force-dynamic'
+interface NotaFiscal {
+  id: string
+  tipo: 'nfce' | 'nfe'
+  numero: number
+  serie: number
+  chave: string
+  protocolo: string
+  status: string
+  valor_total: number
+  emitida_em: string
+  xml: string
+  vendas?: {
+    numero: number
+    total: number
+    data_hora: string
+  }
+}
 
-export default async function NFeListPage() {
-  const supabase = await createClient()
+export default function NFeListPage() {
+  const [notas, setNotas] = useState<NotaFiscal[]>([])
+  const [loading, setLoading] = useState(true)
+  const [notaSelecionada, setNotaSelecionada] = useState<NotaFiscal | null>(null)
+  const [modalCancelarAberto, setModalCancelarAberto] = useState(false)
 
-  // Buscar notas fiscais NF-e
-  const { data: notas } = await supabase
-    .from('notas_fiscais')
-    .select(`
-      *,
-      vendas (numero, total, data_hora)
-    `)
-    .eq('tipo', 'nfe')
-    .order('emitida_em', { ascending: false })
-    .limit(50)
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  useEffect(() => {
+    fetchNotas()
+  }, [])
+
+  async function fetchNotas() {
+    setLoading(true)
+    const { data } = await supabase
+      .from('notas_fiscais')
+      .select(`
+        *,
+        vendas (numero, total, data_hora)
+      `)
+      .eq('tipo', 'nfe')
+      .order('emitida_em', { ascending: false })
+      .limit(50)
+
+    setNotas(data || [])
+    setLoading(false)
+  }
 
   // Calcular resumo
   const resumo = {
-    total: notas?.length || 0,
-    autorizadas: notas?.filter(n => n.status === 'autorizada').length || 0,
-    canceladas: notas?.filter(n => n.status === 'cancelada').length || 0,
-    pendentes: notas?.filter(n => n.status === 'pendente').length || 0,
-    rejeitadas: notas?.filter(n => n.status === 'rejeitada').length || 0,
+    total: notas.length,
+    autorizadas: notas.filter(n => n.status === 'autorizada').length,
+    canceladas: notas.filter(n => n.status === 'cancelada').length,
+    pendentes: notas.filter(n => n.status === 'pendente').length,
+    rejeitadas: notas.filter(n => n.status === 'rejeitada').length,
   }
 
   function formatCurrency(value: number) {
@@ -89,21 +146,62 @@ export default async function NFeListPage() {
     }
   }
 
+  function handleCancelar(nota: NotaFiscal) {
+    setNotaSelecionada(nota)
+    setModalCancelarAberto(true)
+  }
+
+  function handleDownloadXML(nota: NotaFiscal) {
+    if (!nota.xml) {
+      toast.error('XML nao disponivel')
+      return
+    }
+
+    const blob = new Blob([nota.xml], { type: 'application/xml' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `NFe_${nota.numero}_${nota.serie}.xml`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    toast.success('XML baixado com sucesso!')
+  }
+
+  // Verificar se pode cancelar (24 horas para NF-e)
+  function podeCancelar(nota: NotaFiscal): boolean {
+    if (nota.status !== 'autorizada') return false
+    if (!nota.emitida_em) return false
+
+    const dataEmissao = new Date(nota.emitida_em)
+    const agora = new Date()
+    const horasDesdeEmissao = (agora.getTime() - dataEmissao.getTime()) / (1000 * 60 * 60)
+
+    return horasDesdeEmissao <= 24
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">NF-e</h1>
           <p className="text-muted-foreground">
-            Nota Fiscal Eletrônica (Modelo 55)
+            Nota Fiscal Eletronica (Modelo 55)
           </p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/fiscal/nfe/nova">
-            <Plus className="mr-2 h-4 w-4" />
-            Nova NF-e
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={fetchNotas} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          <Button asChild>
+            <Link href="/dashboard/fiscal/nfe/nova">
+              <Plus className="mr-2 h-4 w-4" />
+              Nova NF-e
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Cards de Resumo */}
@@ -126,7 +224,7 @@ export default async function NFeListPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{resumo.autorizadas}</div>
-            <p className="text-xs text-muted-foreground">notas válidas</p>
+            <p className="text-xs text-muted-foreground">notas validas</p>
           </CardContent>
         </Card>
 
@@ -150,7 +248,7 @@ export default async function NFeListPage() {
             <div className={`text-2xl font-bold ${resumo.rejeitadas > 0 ? 'text-red-600' : ''}`}>
               {resumo.rejeitadas}
             </div>
-            <p className="text-xs text-muted-foreground">requer atenção</p>
+            <p className="text-xs text-muted-foreground">requer atencao</p>
           </CardContent>
         </Card>
       </div>
@@ -165,10 +263,10 @@ export default async function NFeListPage() {
                 NF-e para Vendas B2B
               </h3>
               <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                A NF-e (Modelo 55) é utilizada para vendas entre empresas (B2B) ou quando o cliente
-                solicitar. Para emitir, é necessário ter o certificado digital A1 configurado em{' '}
+                A NF-e (Modelo 55) e utilizada para vendas entre empresas (B2B) ou quando o cliente
+                solicitar. Para emitir, e necessario ter o certificado digital A1 configurado em{' '}
                 <Link href="/dashboard/fiscal/configuracoes" className="underline font-medium">
-                  Configurações Fiscais
+                  Configuracoes Fiscais
                 </Link>.
               </p>
             </div>
@@ -179,13 +277,17 @@ export default async function NFeListPage() {
       {/* Tabela de Notas */}
       <Card>
         <CardHeader>
-          <CardTitle>Histórico de NF-e</CardTitle>
+          <CardTitle>Historico de NF-e</CardTitle>
           <CardDescription>
-            {notas?.length || 0} nota(s) encontrada(s)
+            {notas.length} nota(s) encontrada(s)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!notas || notas.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : notas.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <FileText className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold">Nenhuma NF-e emitida</h3>
@@ -203,13 +305,13 @@ export default async function NFeListPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Número</TableHead>
-                  <TableHead>Série</TableHead>
+                  <TableHead>Numero</TableHead>
+                  <TableHead>Serie</TableHead>
                   <TableHead>Data/Hora</TableHead>
                   <TableHead>Chave de Acesso</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-right">Acoes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -228,24 +330,48 @@ export default async function NFeListPage() {
                       {nota.chave ? `${nota.chave.substring(0, 22)}...` : '-'}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {nota.vendas?.total ? formatCurrency(nota.vendas.total) : '-'}
+                      {nota.valor_total ? formatCurrency(nota.valor_total) : '-'}
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(nota.status)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/dashboard/fiscal/nfe/${nota.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        {nota.status === 'autorizada' && (
-                          <Button variant="ghost" size="sm" title="Download XML">
-                            <Download className="h-4 w-4" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/dashboard/fiscal/nfe/${nota.id}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Visualizar
+                            </Link>
+                          </DropdownMenuItem>
+                          {nota.status === 'autorizada' && nota.xml && (
+                            <DropdownMenuItem onClick={() => handleDownloadXML(nota)}>
+                              <Download className="mr-2 h-4 w-4" />
+                              Download XML
+                            </DropdownMenuItem>
+                          )}
+                          {podeCancelar(nota) && (
+                            <DropdownMenuItem
+                              onClick={() => handleCancelar(nota)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Ban className="mr-2 h-4 w-4" />
+                              Cancelar Nota
+                            </DropdownMenuItem>
+                          )}
+                          {nota.status === 'autorizada' && !podeCancelar(nota) && (
+                            <DropdownMenuItem disabled className="text-muted-foreground">
+                              <Ban className="mr-2 h-4 w-4" />
+                              Prazo expirado (24h)
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -254,6 +380,14 @@ export default async function NFeListPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Cancelamento */}
+      <CancelarNotaModal
+        nota={notaSelecionada}
+        open={modalCancelarAberto}
+        onOpenChange={setModalCancelarAberto}
+        onSuccess={fetchNotas}
+      />
     </div>
   )
 }

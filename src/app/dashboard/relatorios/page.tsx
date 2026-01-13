@@ -47,6 +47,7 @@ import {
   Activity,
   PieChart,
   Layers,
+  XCircle,
 } from 'lucide-react'
 
 // Import types and components from shared module
@@ -63,6 +64,7 @@ import {
   type RelatorioEstoqueCritico,
   type RelatorioSaudeFinanceira,
   type RelatorioFiscal,
+  type RelatorioCancelamentos,
   type ItemVendido,
   type ResumoVendas,
   type ResumoEstoque,
@@ -136,6 +138,7 @@ export default function RelatoriosPage() {
   const [relatorioEstoqueCritico, setRelatorioEstoqueCritico] = useState<RelatorioEstoqueCritico | null>(null)
   const [relatorioSaude, setRelatorioSaude] = useState<RelatorioSaudeFinanceira | null>(null)
   const [relatorioFiscal, setRelatorioFiscal] = useState<RelatorioFiscal | null>(null)
+  const [relatorioCancelamentos, setRelatorioCancelamentos] = useState<RelatorioCancelamentos | null>(null)
 
   // Itens vendidos detalhado
   const [itensVendidos, setItensVendidos] = useState<ItemVendido[]>([])
@@ -566,6 +569,9 @@ export default function RelatoriosPage() {
         case 'fiscal':
           setRelatorioFiscal(data)
           break
+        case 'cancelamentos':
+          setRelatorioCancelamentos(data)
+          break
       }
 
       toast.success('Relatorio gerado!')
@@ -752,6 +758,10 @@ export default function RelatoriosPage() {
           <TabsTrigger value="financeiro">
             <DollarSign className="mr-2 h-4 w-4" />
             Financeiro
+          </TabsTrigger>
+          <TabsTrigger value="cancelamentos">
+            <XCircle className="mr-2 h-4 w-4" />
+            Cancelamentos
           </TabsTrigger>
         </TabsList>
 
@@ -1578,6 +1588,339 @@ export default function RelatoriosPage() {
             loading={loading}
             filterComponent={<FiltroData onBuscar={buscarResumoFinanceiro} />}
           />
+        </TabsContent>
+
+        {/* ==================== CANCELAMENTOS ==================== */}
+        <TabsContent value="cancelamentos" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-red-500" />
+                Relatorio de Cancelamentos
+              </CardTitle>
+              <CardDescription>
+                Analise completa de vendas e notas fiscais canceladas
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('cancelamentos')} />
+
+              {relatorioCancelamentos && (
+                <>
+                  {/* Resumo */}
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card className="bg-red-50 dark:bg-red-900/20 border-red-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-red-600">Vendas Canceladas</p>
+                          <p className="text-2xl font-bold text-red-700">
+                            {relatorioCancelamentos.resumo.totalVendasCanceladas}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            de {relatorioCancelamentos.resumo.totalVendasPeriodo} vendas
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-red-50 dark:bg-red-900/20 border-red-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-red-600">Valor Cancelado</p>
+                          <p className="text-2xl font-bold text-red-700">
+                            {formatCurrency(relatorioCancelamentos.resumo.valorTotalCancelado)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Taxa Cancelamento</p>
+                          <p className="text-2xl font-bold">
+                            {relatorioCancelamentos.resumo.taxaCancelamento.toFixed(1)}%
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Ticket Medio Cancelado</p>
+                          <p className="text-2xl font-bold">
+                            {formatCurrency(relatorioCancelamentos.resumo.ticketMedioCancelado)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Notas Fiscais */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">NFC-e Canceladas</p>
+                            <p className="text-xl font-bold">{relatorioCancelamentos.resumo.nfcesCanceladas}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Valor</p>
+                            <p className="text-lg font-medium text-red-600">
+                              {formatCurrency(relatorioCancelamentos.resumo.valorNfceCancelado)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">NF-e Canceladas</p>
+                            <p className="text-xl font-bold">{relatorioCancelamentos.resumo.nfesCanceladas}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Valor</p>
+                            <p className="text-lg font-medium text-red-600">
+                              {formatCurrency(relatorioCancelamentos.resumo.valorNfeCancelado)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Por Motivo e Por Operador */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Por Motivo</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {relatorioCancelamentos.porMotivo.length > 0 ? (
+                          <div className="space-y-3">
+                            {relatorioCancelamentos.porMotivo.map((m, i) => (
+                              <div key={i} className="flex justify-between items-center">
+                                <div>
+                                  <p className="font-medium">{m.motivo}</p>
+                                  <p className="text-xs text-muted-foreground">{m.quantidade} cancelamento(s)</p>
+                                </div>
+                                <p className="font-bold text-red-600">{formatCurrency(m.valor)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-center py-4">Nenhum cancelamento no periodo</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Por Operador</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {relatorioCancelamentos.porOperador.length > 0 ? (
+                          <div className="space-y-3">
+                            {relatorioCancelamentos.porOperador.map((o, i) => (
+                              <div key={i} className="flex justify-between items-center">
+                                <div>
+                                  <p className="font-medium">{o.operador}</p>
+                                  <p className="text-xs text-muted-foreground">{o.quantidade} cancelamento(s)</p>
+                                </div>
+                                <p className="font-bold text-red-600">{formatCurrency(o.valor)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-center py-4">Nenhum cancelamento no periodo</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Dias e Horarios */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Cancelamentos por Dia
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {relatorioCancelamentos.cancelamentosPorDia.length > 0 ? (
+                          <div className="space-y-3">
+                            {relatorioCancelamentos.cancelamentosPorDia.map((d, i) => (
+                              <div key={i} className="flex justify-between items-center">
+                                <div>
+                                  <p className="font-medium">{d.dia}</p>
+                                  <p className="text-xs text-muted-foreground">{d.quantidade} cancelamento(s)</p>
+                                </div>
+                                <p className="font-medium">{formatCurrency(d.valor)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-center py-4">Sem dados</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Horarios com Mais Cancelamentos
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {relatorioCancelamentos.cancelamentosPorHora.length > 0 ? (
+                          <div className="space-y-3">
+                            {relatorioCancelamentos.cancelamentosPorHora.map((h, i) => (
+                              <div key={i} className="flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={i === 0 ? 'destructive' : 'secondary'}>
+                                    {h.hora.toString().padStart(2, '0')}:00
+                                  </Badge>
+                                  <span className="text-sm">{h.quantidade} cancelamento(s)</span>
+                                </div>
+                                <p className="font-medium">{formatCurrency(h.valor)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-center py-4">Sem dados</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Produtos mais cancelados */}
+                  {relatorioCancelamentos.produtosMaisCancelados.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Produtos Mais Cancelados</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Codigo</TableHead>
+                              <TableHead>Produto</TableHead>
+                              <TableHead className="text-right">Qtd</TableHead>
+                              <TableHead className="text-right">Valor</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {relatorioCancelamentos.produtosMaisCancelados.map((p, i) => (
+                              <TableRow key={i}>
+                                <TableCell className="font-mono">{p.codigo}</TableCell>
+                                <TableCell>{p.nome}</TableCell>
+                                <TableCell className="text-right">{p.quantidade}</TableCell>
+                                <TableCell className="text-right text-red-600 font-medium">
+                                  {formatCurrency(p.valor)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Lista de Vendas Canceladas */}
+                  {relatorioCancelamentos.vendas.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Vendas Canceladas</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Numero</TableHead>
+                              <TableHead>Data/Hora</TableHead>
+                              <TableHead>Cliente</TableHead>
+                              <TableHead>Operador</TableHead>
+                              <TableHead>Motivo</TableHead>
+                              <TableHead className="text-right">Valor</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {relatorioCancelamentos.vendas.map((v) => (
+                              <TableRow key={v.id}>
+                                <TableCell className="font-mono">#{v.numero}</TableCell>
+                                <TableCell>{formatDateTime(v.data_hora)}</TableCell>
+                                <TableCell>{v.cliente}</TableCell>
+                                <TableCell>{v.operador}</TableCell>
+                                <TableCell className="max-w-[200px] truncate" title={v.motivo}>
+                                  {v.motivo}
+                                </TableCell>
+                                <TableCell className="text-right font-medium text-red-600">
+                                  {formatCurrency(v.total)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Lista de Notas Canceladas */}
+                  {relatorioCancelamentos.notas.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Notas Fiscais Canceladas</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Tipo</TableHead>
+                              <TableHead>Numero</TableHead>
+                              <TableHead>Emitida em</TableHead>
+                              <TableHead>Cancelada em</TableHead>
+                              <TableHead>Motivo</TableHead>
+                              <TableHead className="text-right">Valor</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {relatorioCancelamentos.notas.map((n) => (
+                              <TableRow key={n.id}>
+                                <TableCell>
+                                  <Badge variant={n.tipo === 'NFC-e' ? 'default' : 'secondary'}>
+                                    {n.tipo}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-mono">{n.numero}/{n.serie}</TableCell>
+                                <TableCell>{n.emitida_em ? formatDateTime(n.emitida_em) : '-'}</TableCell>
+                                <TableCell>{n.cancelada_em ? formatDateTime(n.cancelada_em) : '-'}</TableCell>
+                                <TableCell className="max-w-[200px] truncate" title={n.motivo}>
+                                  {n.motivo}
+                                </TableCell>
+                                <TableCell className="text-right font-medium text-red-600">
+                                  {formatCurrency(n.valor)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+
+              {!relatorioCancelamentos && !loading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <XCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Clique em "Gerar Relatorio" para ver os cancelamentos</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

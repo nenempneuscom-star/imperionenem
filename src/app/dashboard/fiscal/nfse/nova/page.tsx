@@ -158,12 +158,16 @@ export default function NovaNFSePage() {
       // Escolher endpoint baseado na opcao ADN
       const endpoint = formData.usar_adn ? '/api/nfse/adn' : '/api/nfse'
 
+      // Se usar ADN, emitir diretamente (autoriza em homologacao/producao)
+      // Se legado, criar RPS como rascunho para envio manual
+      const statusEnvio = formData.usar_adn ? 'pendente' : 'rascunho'
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          status: 'rascunho',
+          status: statusEnvio,
         }),
       })
 

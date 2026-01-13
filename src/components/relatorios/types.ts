@@ -174,6 +174,46 @@ export interface RelatorioFiscal {
   }
 }
 
+export interface RelatorioCancelamentos {
+  resumo: {
+    totalVendasPeriodo: number
+    totalVendasCanceladas: number
+    valorTotalCancelado: number
+    taxaCancelamento: number
+    ticketMedioCancelado: number
+    nfcesCanceladas: number
+    valorNfceCancelado: number
+    nfesCanceladas: number
+    valorNfeCancelado: number
+  }
+  porMotivo: { motivo: string; quantidade: number; valor: number }[]
+  porOperador: { operador: string; quantidade: number; valor: number }[]
+  cancelamentosPorDia: { dia: string; quantidade: number; valor: number }[]
+  cancelamentosPorHora: { hora: number; quantidade: number; valor: number }[]
+  produtosMaisCancelados: { codigo: string; nome: string; quantidade: number; valor: number }[]
+  vendas: {
+    id: string
+    numero: number
+    data_hora: string
+    total: number
+    cliente: string
+    operador: string
+    motivo: string
+    itens: number
+  }[]
+  notas: {
+    id: string
+    tipo: string
+    numero: number
+    serie: number
+    chave: string
+    valor: number
+    emitida_em: string
+    cancelada_em: string
+    motivo: string
+  }[]
+}
+
 export interface ItemVendido {
   id: string
   venda_numero: number
