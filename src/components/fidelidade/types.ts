@@ -35,6 +35,28 @@ export interface Movimento {
   venda?: { numero: number }[] | null
 }
 
+// Tipos para Produtos Resgataveis
+export interface ProdutoFidelidade {
+  id: string
+  produto_id: string | null
+  nome: string
+  descricao: string | null
+  pontos_necessarios: number
+  estoque_disponivel: number | null
+  ativo: boolean
+  produto?: {
+    nome: string
+    codigo: string
+  } | null
+}
+
+export interface ProdutoCatalogo {
+  id: string
+  codigo: string
+  nome: string
+  preco_venda: number
+}
+
 // Funcoes utilitarias
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
