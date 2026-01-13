@@ -31,7 +31,12 @@ src/
 │   └── login/
 ├── components/
 │   ├── ui/                # Componentes shadcn/ui
-│   ├── pdv/               # Componentes do PDV (modais, busca, etc)
+│   ├── pdv/               # Componentes do PDV
+│   │   ├── *-modal.tsx    # Weight, Client, Help, Discount, PIX, PaymentCombination
+│   │   ├── sidebar-*.tsx  # Summary, PaymentSelector, PaymentDetails
+│   │   ├── confirm-sale-footer.tsx
+│   │   ├── product-search-results.tsx
+│   │   └── types.ts       # Produto, Cliente, PaymentMethod, etc
 │   ├── pdv-caixa/         # Controle de caixa
 │   │   ├── modals/        # AbrirCaixa, FecharCaixa, Sangria, Suprimento
 │   │   ├── *-card.tsx     # Cards de resumo
@@ -94,10 +99,28 @@ src/
 ## Modulos Principais
 
 ### PDV (`/pdv`)
-- Venda rapida com scanner de codigo de barras
-- Multiplas formas de pagamento (dinheiro, cartao, PIX, crediario)
-- Controle de caixa (`/pdv/caixa`) - modularizado em `components/pdv-caixa`
-- Emissao de NFC-e
+Ponto de venda modularizado em `components/pdv`:
+
+Componentes principais:
+- **ProductSearchResults:** Lista de produtos encontrados na busca
+- **SidebarSummary:** Resumo do carrinho com totais e descontos
+- **ClientFidelidadeSection:** Selecao de cliente e pontos fidelidade
+- **PaymentSelector:** Grid de formas de pagamento (F6-F11)
+- **PaymentDetails:** Detalhes do pagamento (troco, QR PIX, etc)
+- **CombinedPaymentSummary:** Resumo de pagamento combinado
+- **NFCeToggle:** Toggle para emitir NFC-e
+- **ConfirmSaleFooter:** Botao confirmar venda e estado sucesso
+- **PixModal:** Modal com QR Code PIX
+- **DiscountButton:** Botao de desconto geral
+
+Modais existentes:
+- **WeightModal:** Informar peso de produtos pesaveis
+- **ClientModal:** Busca e selecao de cliente
+- **HelpModal:** Atalhos de teclado (F1)
+- **DiscountModal:** Aplicar desconto (item ou geral)
+- **PaymentCombinationModal:** Combinar formas de pagamento
+
+Controle de caixa (`/pdv/caixa`) - modularizado em `components/pdv-caixa`
 
 ### Fidelidade (`/dashboard/fidelidade`)
 Programa de fidelidade modularizado em `components/fidelidade`:
@@ -187,11 +210,12 @@ npm run lint     # Verificar linting
 ## Observacoes para o Claude Code
 
 1. **Componentes modulares:** Modulos ja refatorados em componentes:
+   - `pdv` - 10 componentes de sidebar + 6 modais + tipos
+   - `pdv-caixa` - 4 modals + 4 cards
    - `relatorios` - 14 tabs de relatorios
    - `configuracoes` - 4 tabs de configuracoes gerais
    - `fiscal-config` - 4 tabs de configuracoes fiscais
    - `fidelidade` - 2 tabs + 1 modal + 4 componentes de produtos
-   - `pdv-caixa` - 4 modals + 4 cards
    - `orcamentos` - 14 componentes (cliente, itens, modals, cards)
 2. **Tipos compartilhados:** Usar exports de `@/components/*/types.ts`
 3. **Idioma:** Interface em portugues brasileiro (sem acentos em codigo)
@@ -229,6 +253,23 @@ import {
   type FidelidadeConfig,
   type ProdutoFidelidade,
 } from '@/components/fidelidade'
+
+// Importar de pdv
+import {
+  ProductSearchResults,
+  SidebarSummary,
+  PaymentSelector,
+  PaymentDetails,
+  ConfirmSaleFooter,
+  PixModal,
+  WeightModal,
+  ClientModal,
+  type Produto,
+  type Cliente,
+  type PaymentMethodId,
+  formatCurrency,
+  isProdutoPesavel,
+} from '@/components/pdv'
 
 // Importar de pdv-caixa
 import {
