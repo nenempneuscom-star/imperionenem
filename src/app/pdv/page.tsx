@@ -20,6 +20,8 @@ import {
   Scan,
   Scale,
   Percent,
+  Car,
+  User,
 } from 'lucide-react'
 
 // PDV Components
@@ -27,6 +29,7 @@ import {
   PDVHeader,
   WeightModal,
   ClientModal,
+  VehicleModal,
   HelpModal,
   DiscountModal,
   PaymentCombinationModal,
@@ -44,6 +47,7 @@ import {
   type DadosRecibo,
   type Produto,
   type Cliente,
+  type Veiculo,
   type FidelidadeConfig,
   type ClientePontos,
   type NFCeResult,
@@ -83,12 +87,18 @@ export default function PDVPage() {
   const [caixaAberto, setCaixaAberto] = useState<CaixaAberto | null>(null)
   const [loadingCaixa, setLoadingCaixa] = useState(true)
   const [empresa, setEmpresa] = useState<Empresa | null>(null)
-  // Estados para crediario
+  // Estados para cliente
   const [showClienteModal, setShowClienteModal] = useState(false)
+  const [clienteModalMode, setClienteModalMode] = useState<'crediario' | 'identificacao'>('identificacao')
   const [clienteSearch, setClienteSearch] = useState('')
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
   const [loadingClientes, setLoadingClientes] = useState(false)
+  // Estados para veiculo
+  const [showVeiculoModal, setShowVeiculoModal] = useState(false)
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([])
+  const [veiculoSelecionado, setVeiculoSelecionado] = useState<Veiculo | null>(null)
+  const [loadingVeiculos, setLoadingVeiculos] = useState(false)
   // Estados para fidelidade
   const [fidelidadeConfig, setFidelidadeConfig] = useState<FidelidadeConfig | null>(null)
   const [clientePontos, setClientePontos] = useState<ClientePontos | null>(null)
@@ -646,11 +656,29 @@ export default function PDVPage() {
     }
   }
 
-  // Selecionar cliente para crediario
+  // Buscar veiculos do cliente
+  async function buscarVeiculosCliente(clienteId: string) {
+    setLoadingVeiculos(true)
+    try {
+      const response = await fetch(`/api/veiculos?cliente_id=${clienteId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setVeiculos(data || [])
+      }
+    } catch (error) {
+      console.error('Erro ao buscar veiculos:', error)
+      setVeiculos([])
+    } finally {
+      setLoadingVeiculos(false)
+    }
+  }
+
+  // Selecionar cliente
   function selecionarCliente(cliente: Cliente) {
     const creditoDisponivel = cliente.limite_credito - cliente.saldo_devedor
 
-    if (selectedPayment === 'crediario' && creditoDisponivel < total) {
+    // Se for crediario, validar limite
+    if (clienteModalMode === 'crediario' && creditoDisponivel < total) {
       toast.error(`Credito insuficiente. Disponivel: ${formatCurrency(creditoDisponivel)}`)
       return
     }
@@ -663,6 +691,20 @@ export default function PDVPage() {
 
     if (fidelidadeConfig) {
       buscarPontosCliente(cliente.id)
+    }
+
+    // Se for modo identificacao, abrir modal de veiculos
+    if (clienteModalMode === 'identificacao') {
+      buscarVeiculosCliente(cliente.id)
+      setShowVeiculoModal(true)
+    }
+  }
+
+  // Selecionar veiculo
+  function selecionarVeiculo(veiculo: Veiculo | null) {
+    setVeiculoSelecionado(veiculo)
+    if (veiculo) {
+      toast.success(`Veiculo ${veiculo.marca} ${veiculo.modelo} selecionado`)
     }
   }
 
@@ -819,6 +861,8 @@ export default function PDVPage() {
               empresa_id: userData.empresa_id,
               usuario_id: userData.id,
               caixa_id: caixaAberto?.id || null,
+              cliente_id: clienteSelecionado?.id || null,
+              veiculo_id: veiculoSelecionado?.id || null,
               subtotal,
               desconto: descontoTotal,
               desconto_percentual: descontoGeral.percentual || 0,
@@ -1071,6 +1115,8 @@ export default function PDVPage() {
     setCpfCliente('')
     setVendaFinalizada(null)
     setClienteSelecionado(null)
+    setVeiculoSelecionado(null)
+    setVeiculos([])
     setCombinedPayments(null)
     setCombinedValorRecebido(undefined)
     setClientePontos(null)
@@ -1151,9 +1197,16 @@ export default function PDVPage() {
       if (paymentId === 'pix') {
         setShowPixModal(true)
       } else if (paymentId === 'crediario' && !clienteSelecionado) {
+        setClienteModalMode('crediario')
         setShowClienteModal(true)
       }
     }
+  }
+
+  // Abrir modal para identificar cliente
+  function handleIdentificarCliente() {
+    setClienteModalMode('identificacao')
+    setShowClienteModal(true)
   }
 
   // Handler para usar pontos
@@ -1238,12 +1291,16 @@ export default function PDVPage() {
           e.preventDefault()
           if (items.length > 0) {
             setSelectedPayment('crediario')
-            if (!clienteSelecionado) setShowClienteModal(true)
+            if (!clienteSelecionado) {
+              setClienteModalMode('crediario')
+              setShowClienteModal(true)
+            }
           }
           break
         case 'F11':
           e.preventDefault()
-          if (fidelidadeConfig) setShowClienteModal(true)
+          // Identificar cliente
+          handleIdentificarCliente()
           break
         case 'F12':
           e.preventDefault()
@@ -1429,6 +1486,84 @@ export default function PDVPage() {
             }}
           />
 
+          {/* Identificacao de Cliente/Veiculo */}
+          <div className="p-4 border-b">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-muted-foreground">Identificacao</span>
+              <span className="text-xs text-muted-foreground">F11</span>
+            </div>
+            {clienteSelecionado ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                  <User className="h-4 w-4 text-primary" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{clienteSelecionado.nome}</p>
+                    <p className="text-xs text-muted-foreground">{clienteSelecionado.cpf_cnpj}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    onClick={() => {
+                      setClienteSelecionado(null)
+                      setVeiculoSelecionado(null)
+                      setVeiculos([])
+                      toast.success('Cliente removido')
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+                {veiculoSelecionado ? (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                    <Car className="h-4 w-4 text-orange-500" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {veiculoSelecionado.marca} {veiculoSelecionado.modelo}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {veiculoSelecionado.placa || `${veiculoSelecionado.ano || ''}`}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => {
+                        setVeiculoSelecionado(null)
+                        toast.success('Veiculo removido')
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      buscarVeiculosCliente(clienteSelecionado.id)
+                      setShowVeiculoModal(true)
+                    }}
+                  >
+                    <Car className="mr-2 h-4 w-4" />
+                    Selecionar Veiculo
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleIdentificarCliente}
+              >
+                <User className="mr-2 h-4 w-4" />
+                Identificar Cliente
+              </Button>
+            )}
+          </div>
+
           <ClientFidelidadeSection
             fidelidadeConfig={fidelidadeConfig}
             selectedPayment={selectedPayment}
@@ -1546,6 +1681,17 @@ export default function PDVPage() {
         loading={loadingClientes}
         total={total}
         onSelectClient={selecionarCliente}
+        mode={clienteModalMode}
+      />
+
+      <VehicleModal
+        open={showVeiculoModal}
+        onOpenChange={setShowVeiculoModal}
+        cliente={clienteSelecionado}
+        veiculos={veiculos}
+        loading={loadingVeiculos}
+        onSelectVehicle={selecionarVeiculo}
+        onRefreshVeiculos={() => clienteSelecionado && buscarVeiculosCliente(clienteSelecionado.id)}
       />
 
       <HelpModal

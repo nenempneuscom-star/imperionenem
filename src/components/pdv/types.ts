@@ -20,6 +20,17 @@ export interface Cliente {
   saldo_devedor: number
 }
 
+export interface Veiculo {
+  id: string
+  cliente_id: string
+  marca: string
+  modelo: string
+  ano?: number
+  placa?: string
+  cor?: string
+  observacoes?: string
+}
+
 export interface FidelidadeConfig {
   id: string
   pontos_por_real: number
