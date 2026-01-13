@@ -7,10 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toast } from 'sonner'
-import { Loader2, Building2, MapPin, FileText, Save, Search, Settings, AlertTriangle, RotateCcw, Key, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
-import { validarCNPJ, formatarCNPJ, formatarTelefone, formatarCEP } from '@/lib/utils/validators'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,33 +19,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-
-interface Empresa {
-  id: string
-  razao_social: string
-  nome_fantasia: string | null
-  cnpj: string
-  ie: string | null
-  telefone: string | null
-  email: string | null
-  endereco: {
-    cep: string
-    logradouro: string
-    numero: string
-    complemento: string
-    bairro: string
-    cidade: string
-    uf: string
-  } | null
-  config_fiscal: {
-    regime_tributario: string
-    ambiente: string
-    serie_nfce: string
-    numero_nfce: number
-    serie_nfe: string
-    numero_nfe: number
-  } | null
-}
+import { toast } from 'sonner'
+import { Loader2, Building2, MapPin, FileText, Save, Settings, Search, AlertTriangle, RotateCcw, Key, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
+import { validarCNPJ, formatarCNPJ, formatarTelefone, formatarCEP } from '@/lib/utils/validators'
+import {
+  type Empresa,
+  type FormDataConfiguracoes,
+  initialFormData,
+  EmpresaTab,
+  EnderecoTab,
+  FiscalTab,
+  SistemaTab,
+} from '@/components/configuracoes'
 
 export default function ConfiguracoesPage() {
   const supabase = createClient()
@@ -72,31 +54,7 @@ export default function ConfiguracoesPage() {
   const [mostrarSenhaAtual, setMostrarSenhaAtual] = useState(false)
   const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false)
 
-  const [formData, setFormData] = useState({
-    razao_social: '',
-    nome_fantasia: '',
-    cnpj: '',
-    ie: '',
-    telefone: '',
-    email: '',
-    // Endereço
-    cep: '',
-    logradouro: '',
-    numero: '',
-    complemento: '',
-    bairro: '',
-    cidade: '',
-    uf: '',
-    // Fiscal
-    regime_tributario: '1',
-    ambiente: '2', // 1 = Produção, 2 = Homologação
-    serie_nfce: '1',
-    numero_nfce: '1',
-    serie_nfe: '1',
-    numero_nfe: '1',
-    // PIX
-    chave_pix: '',
-  })
+  const [formData, setFormData] = useState<FormDataConfiguracoes>(initialFormData)
 
   useEffect(() => {
     carregarEmpresa()
