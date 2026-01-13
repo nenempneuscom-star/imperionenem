@@ -57,6 +57,7 @@ import {
   Send,
   AlertTriangle,
 } from 'lucide-react'
+import { printOrcamento } from '@/components/orcamento/orcamento-print'
 
 interface Orcamento {
   id: string
@@ -176,6 +177,87 @@ export default function OrcamentosPage() {
     } catch (error) {
       toast.error('Erro ao atualizar status')
     }
+  }
+
+  async function handlePrint(orcamentoId: string) {
+    try {
+      const response = await fetch(`/api/orcamentos/${orcamentoId}`)
+      if (!response.ok) throw new Error('Erro ao buscar orcamento')
+
+      const data = await response.json()
+      const orc = data.orcamento
+      const itens = data.itens || []
+
+      printOrcamento({
+        orcamento: {
+          numero: orc.numero,
+          data: new Date(orc.created_at),
+          validade: new Date(orc.data_validade),
+          status: orc.status,
+          observacoes: orc.observacoes,
+          condicoes: orc.condicoes,
+        },
+        empresa: orc.empresas ? {
+          nome: orc.empresas.nome_fantasia || orc.empresas.razao_social,
+          cnpj: orc.empresas.cnpj,
+          telefone: orc.empresas.telefone,
+          endereco: orc.empresas.endereco,
+        } : null,
+        cliente: orc.clientes ? {
+          nome: orc.clientes.nome,
+          cpf_cnpj: orc.clientes.cpf_cnpj,
+          telefone: orc.clientes.telefone,
+          email: orc.clientes.email,
+        } : {
+          nome: orc.cliente_nome,
+          cpf_cnpj: orc.cliente_cpf_cnpj,
+          telefone: orc.cliente_telefone,
+          email: orc.cliente_email,
+        },
+        itens: itens.map((item: any) => ({
+          codigo: item.codigo || '',
+          nome: item.nome,
+          unidade: item.unidade,
+          quantidade: item.quantidade,
+          preco_unitario: item.preco_unitario,
+          desconto: item.desconto,
+          total: item.total,
+        })),
+        subtotal: orc.subtotal,
+        desconto: orc.desconto,
+        total: orc.total,
+      })
+    } catch (error) {
+      toast.error('Erro ao imprimir orcamento')
+    }
+  }
+
+  function handleWhatsApp(orcamento: Orcamento) {
+    const clienteTelefone = orcamento.clientes?.telefone || orcamento.cliente_telefone
+    const clienteNome = orcamento.clientes?.nome || orcamento.cliente_nome || 'Cliente'
+
+    const mensagem = `*ORCAMENTO #${orcamento.numero}*
+Nenem Pneus
+
+Ola ${clienteNome}!
+
+Seu orcamento no valor de *${formatCurrency(orcamento.total)}* esta disponivel.
+
+Valido ate: ${formatDate(orcamento.data_validade)}
+
+Para mais detalhes, entre em contato conosco.
+Aguardamos seu retorno!`
+
+    let telefone = clienteTelefone?.replace(/\D/g, '') || ''
+    if (telefone.length === 11 || telefone.length === 10) {
+      telefone = '55' + telefone
+    }
+
+    const url = telefone
+      ? `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`
+      : `https://wa.me/?text=${encodeURIComponent(mensagem)}`
+
+    window.open(url, '_blank')
   }
 
   function formatCurrency(value: number) {
@@ -375,11 +457,11 @@ export default function OrcamentosPage() {
                                 </Link>
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlePrint(orcamento.id)}>
                               <Printer className="h-4 w-4 mr-2" />
                               Imprimir
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleWhatsApp(orcamento)}>
                               <Send className="h-4 w-4 mr-2" />
                               Enviar por WhatsApp
                             </DropdownMenuItem>

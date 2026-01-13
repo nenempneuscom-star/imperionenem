@@ -19,6 +19,7 @@ export async function GET(
       *,
       clientes (id, nome, telefone, cpf_cnpj, email, endereco, cidade, uf, cep),
       usuarios (id, nome),
+      empresas (id, nome_fantasia, razao_social, cnpj, telefone, endereco),
       orcamento_itens (
         id,
         produto_id,
@@ -47,7 +48,9 @@ export async function GET(
     return NextResponse.json({ error: 'Orcamento nao encontrado' }, { status: 404 })
   }
 
-  return NextResponse.json(data)
+  // Separar orcamento e itens para facilitar uso no frontend
+  const { orcamento_itens, ...orcamento } = data
+  return NextResponse.json({ orcamento, itens: orcamento_itens })
 }
 
 export async function PUT(
