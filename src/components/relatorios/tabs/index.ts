@@ -1,0 +1,5 @@
+export { VendasTab } from './vendas-tab'
+export { PagamentosTab } from './pagamentos-tab'
+export { OperacionalTab } from './operacional-tab'
+export { DescontosTab } from './descontos-tab'
+export { CrediarioTab } from './crediario-tab'

@@ -49,190 +49,35 @@ import {
   Layers,
 } from 'lucide-react'
 
-// Interfaces existentes
-interface VendaRelatorio {
-  id: string
-  numero: number
-  data_hora: string
-  total: number
-  status: string
-  clientes: { nome: string } | null
-  usuarios: { nome: string } | null
-}
-
-interface ProdutoRelatorio {
-  id: string
-  codigo: string
-  nome: string
-  estoque_atual: number
-  estoque_minimo: number
-  preco_venda: number
-  preco_custo: number
-  unidade: string
-  total_vendido?: number
-  valor_vendido?: number
-}
-
-interface PagamentoRelatorio {
-  forma_pagamento: string
-  total: number
-  quantidade: number
-}
-
-interface ResumoFinanceiro {
-  total_vendas: number
-  total_custo: number
-  lucro_bruto: number
-  margem: number
-  ticket_medio: number
-  quantidade_vendas: number
-}
-
-interface ProdutoCurvaABC {
-  id: string
-  codigo: string
-  nome: string
-  quantidade_vendida: number
-  valor_vendido: number
-  percentual: number
-  percentual_acumulado: number
-  classe: 'A' | 'B' | 'C'
-}
-
-// Novas interfaces para os relatorios "fofoqueira"
-interface RelatorioDescontos {
-  resumo: {
-    totalDesconto: number
-    totalDescontoVendas: number
-    totalDescontoItens: number
-    quantidadeVendas: number
-    quantidadeItens: number
-  }
-  porMotivo: { motivo: string; quantidade: number; valor: number }[]
-  porOperador: { operador: string; quantidade: number; valor: number }[]
-  porProduto: { codigo: string; nome: string; quantidade: number; valor: number }[]
-}
-
-interface RelatorioCrediario {
-  resumo: {
-    totalCrediario: number
-    totalEmAberto: number
-    totalAtrasado: number
-    totalRecebido: number
-    taxaRecuperacao: number
-    quantidadeParcelasAbertas: number
-    quantidadeParcelasAtrasadas: number
-  }
-  clientesDevedores: { cliente: string; telefone: string; totalAberto: number; totalAtrasado: number; parcelas: number }[]
-  parcelasAtrasadas: any[]
-}
-
-interface RelatorioClientes {
-  resumo: {
-    totalClientes: number
-    clientesNovos: number
-    totalVendas: number
-    vendasConsumidor: number
-    vendasCliente: number
-    percentualIdentificado: number
-  }
-  melhoresClientes: any[]
-  maisFrequentes: any[]
-  clientesSumiram: any[]
-}
-
-interface RelatorioOperacional {
-  resumo: {
-    totalVendas: number
-    valorTotal: number
-    vendasCanceladas: number
-    valorCancelado: number
-    taxaCancelamento: number
-    vendasPagamentoCombinado?: number
-    percentualCombinado?: number
-  }
-  horariosPico: { hora: number; quantidade: number; valor: number }[]
-  diasSemana: { dia: string; quantidade: number; valor: number }[]
-  formasPagamento: { forma: string; quantidade: number; valor: number }[]
-  porOperador: { operador: string; quantidade: number; valor: number }[]
-  pagamentosCombinados?: { combinacao: string; quantidade: number }[]
-}
-
-interface RelatorioEstoqueCritico {
-  resumo: {
-    totalProdutos: number
-    abaixoMinimo: number
-    estoqueZerado: number
-    produtosParados: number
-    valorParado: number
-  }
-  abaixoMinimo: any[]
-  estoqueZerado: any[]
-  produtosParados: any[]
-}
-
-interface RelatorioSaudeFinanceira {
-  periodo: {
-    receitaBruta: number
-    descontos: number
-    receitaLiquida: number
-    cmv: number
-    lucroBruto: number
-    margemBruta: number
-    quantidadeVendas: number
-    ticketMedio: number
-  }
-  comparativo: {
-    receitaAnterior: number
-    crescimento: number
-    diferencaValor: number
-  } | null
-  fluxoCaixa: {
-    totalReceber: number
-    totalPagar: number
-    saldo: number
-  }
-  indicadores: {
-    margemBruta: number
-    percentualDesconto: number
-    cobertura: number
-  }
-}
-
-interface RelatorioFiscal {
-  nfce: {
-    emitidas: number
-    valorEmitido: number
-    canceladas: number
-    valorCancelado: number
-  }
-  nfe: {
-    emitidas: number
-    valorEmitido: number
-    canceladas: number
-    valorCancelado: number
-  }
-  impostos: {
-    totalVendas: number
-    totalImpostos: number
-    percentualMedio: number
-  }
-}
-
-// Interface para itens vendidos detalhado
-interface ItemVendido {
-  id: string
-  venda_numero: number
-  venda_data: string
-  cliente_nome: string
-  produto_codigo: string
-  produto_nome: string
-  quantidade: number
-  preco_unitario: number
-  desconto: number
-  total: number
-  unidade: string
-}
+// Import types from shared module
+import {
+  type VendaRelatorio,
+  type ProdutoRelatorio,
+  type PagamentoRelatorio,
+  type ResumoFinanceiro,
+  type ProdutoCurvaABC,
+  type RelatorioDescontos,
+  type RelatorioCrediario,
+  type RelatorioClientes,
+  type RelatorioOperacional,
+  type RelatorioEstoqueCritico,
+  type RelatorioSaudeFinanceira,
+  type RelatorioFiscal,
+  type ItemVendido,
+  type ResumoVendas,
+  type ResumoEstoque,
+  type ResumoCurvaABC,
+  type ResumoItensVendidos,
+  formatCurrency,
+  formatDateTime,
+  formatDate,
+  DateFilter,
+  VendasTab,
+  PagamentosTab,
+  OperacionalTab,
+  DescontosTab,
+  CrediarioTab,
+} from '@/components/relatorios'
 
 export default function RelatoriosPage() {
   const supabase = createClient()
