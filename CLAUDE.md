@@ -32,13 +32,25 @@ src/
 ├── components/
 │   ├── ui/                # Componentes shadcn/ui
 │   ├── pdv/               # Componentes do PDV (modais, busca, etc)
+│   ├── pdv-caixa/         # Controle de caixa
+│   │   ├── modals/        # AbrirCaixa, FecharCaixa, Sangria, Suprimento
+│   │   ├── *-card.tsx     # Cards de resumo
+│   │   └── types.ts
 │   ├── relatorios/        # Componentes de relatorios
 │   │   ├── tabs/          # 14 componentes de tab
 │   │   ├── date-filter.tsx
 │   │   ├── stats-card.tsx
-│   │   └── types.ts       # Tipos compartilhados
-│   └── configuracoes/     # Componentes de configuracoes
-│       ├── tabs/          # EmpresaTab, EnderecoTab, FiscalTab, SistemaTab
+│   │   └── types.ts
+│   ├── configuracoes/     # Configuracoes gerais
+│   │   ├── tabs/          # EmpresaTab, EnderecoTab, FiscalTab, SistemaTab
+│   │   └── types.ts
+│   ├── fiscal-config/     # Configuracoes fiscais
+│   │   ├── tabs/          # GeralTab, CertificadoTab, NFCeTab, NFeTab
+│   │   └── types.ts
+│   └── fidelidade/        # Programa de fidelidade
+│       ├── pontos-tab.tsx
+│       ├── config-tab.tsx
+│       ├── ajuste-modal.tsx
 │       └── types.ts
 ├── lib/
 │   ├── supabase/          # Cliente Supabase
@@ -73,8 +85,14 @@ src/
 ### PDV (`/pdv`)
 - Venda rapida com scanner de codigo de barras
 - Multiplas formas de pagamento (dinheiro, cartao, PIX, crediario)
-- Controle de caixa
+- Controle de caixa (`/pdv/caixa`) - modularizado em `components/pdv-caixa`
 - Emissao de NFC-e
+
+### Fidelidade (`/dashboard/fidelidade`)
+Programa de fidelidade modularizado em `components/fidelidade`:
+- **PontosTab:** Lista de clientes com pontos, historico de movimentos
+- **ConfigTab:** Configuracao do programa (pontos/real, valor resgate, validade)
+- **AjusteModal:** Adicionar/remover pontos manualmente
 
 ### Relatorios (`/dashboard/relatorios`)
 14 tabs de relatorios, cada uma com componente modular em `components/relatorios/tabs/`:
@@ -104,7 +122,11 @@ src/
 - Emissao de NF-e
 - Emissao de NFC-e
 - NFS-e (servicos)
-- Configuracao de certificado
+- Configuracoes fiscais (`/dashboard/fiscal/configuracoes`) - modularizado em `components/fiscal-config`:
+  - **GeralTab:** Regime tributario, ambiente (producao/homologacao)
+  - **CertificadoTab:** Upload e status do certificado digital
+  - **NFCeTab:** Serie, CSC, CFOP para NFC-e
+  - **NFeTab:** Serie, CFOP para NF-e
 
 ## Banco de Dados (Supabase)
 
@@ -126,7 +148,12 @@ npm run lint     # Verificar linting
 
 ## Observacoes para o Claude Code
 
-1. **Componentes modulares:** PDV, Configuracoes e Relatorios ja foram refatorados em componentes
+1. **Componentes modulares:** Modulos ja refatorados em componentes:
+   - `relatorios` - 14 tabs de relatorios
+   - `configuracoes` - 4 tabs de configuracoes gerais
+   - `fiscal-config` - 4 tabs de configuracoes fiscais
+   - `fidelidade` - 2 tabs + 1 modal
+   - `pdv-caixa` - 4 modals + 4 cards
 2. **Tipos compartilhados:** Usar exports de `@/components/*/types.ts`
 3. **Idioma:** Interface em portugues brasileiro (sem acentos em codigo)
 4. **Padrao de tabs:** Componentes de tab usam render props (`filterComponent`, `exportButton`)
@@ -145,11 +172,28 @@ interface TabProps {
 
 ### Imports Centralizados
 ```tsx
-// Importar tudo de um modulo
+// Importar de relatorios
 import {
   VendasTab,
   PagamentosTab,
   type VendaRelatorio,
   formatCurrency,
 } from '@/components/relatorios'
+
+// Importar de fidelidade
+import {
+  PontosTab,
+  ConfigTab,
+  AjusteModal,
+  type FidelidadeConfig,
+} from '@/components/fidelidade'
+
+// Importar de pdv-caixa
+import {
+  CaixaFechadoCard,
+  ResumoCards,
+  AbrirCaixaModal,
+  type Caixa,
+  type Resumo,
+} from '@/components/pdv-caixa'
 ```
