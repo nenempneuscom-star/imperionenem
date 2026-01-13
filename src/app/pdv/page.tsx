@@ -44,7 +44,6 @@ import {
   RefreshCw,
   LockOpen,
   Wallet,
-  Keyboard,
   Scan,
   Search,
   Plus,
@@ -1385,83 +1384,16 @@ export default function PDVPage() {
       {/* Área Principal - Produtos */}
       <div className="flex-1 flex flex-col p-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/dashboard">
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-            </Button>
-            <h1 className="text-2xl font-bold">PDV - Ponto de Venda</h1>
-            {/* Status de conexao */}
-            {isOnline ? (
-              <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                <Wifi className="h-3 w-3 mr-1" />
-                Online
-              </Badge>
-            ) : (
-              <Badge variant="destructive">
-                <WifiOff className="h-3 w-3 mr-1" />
-                Offline
-              </Badge>
-            )}
-            {/* Vendas pendentes */}
-            {vendasPendentes > 0 && (
-              <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-700">
-                <CloudOff className="h-3 w-3 mr-1" />
-                {vendasPendentes} pendente{vendasPendentes > 1 ? 's' : ''}
-              </Badge>
-            )}
-            {/* Status do Caixa */}
-            {!loadingCaixa && (
-              <Link href="/pdv/caixa">
-                {caixaAberto ? (
-                  <Badge variant="default" className="bg-green-600 hover:bg-green-700 cursor-pointer">
-                    <LockOpen className="h-3 w-3 mr-1" />
-                    Caixa Aberto
-                  </Badge>
-                ) : (
-                  <Badge variant="destructive" className="cursor-pointer">
-                    <Wallet className="h-3 w-3 mr-1" />
-                    Abrir Caixa
-                  </Badge>
-                )}
-              </Link>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={cacheAllProducts}
-              disabled={!isOnline}
-              title="Baixar produtos para uso offline"
-            >
-              <Download className="h-4 w-4 mr-1" />
-              <span className="hidden md:inline">Cache</span>
-            </Button>
-            {vendasPendentes > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={sincronizarVendas}
-                disabled={!isOnline || isSyncing}
-              >
-                <RefreshCw className={`h-4 w-4 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span className="hidden md:inline">Sincronizar</span>
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAjuda(true)}
-              className="text-muted-foreground"
-            >
-              <Keyboard className="h-4 w-4 mr-1" />
-              <span className="hidden md:inline">F1: Atalhos</span>
-            </Button>
-          </div>
-        </div>
+        <PDVHeader
+          isOnline={isOnline}
+          vendasPendentes={vendasPendentes}
+          caixaAberto={caixaAberto}
+          loadingCaixa={loadingCaixa}
+          isSyncing={isSyncing}
+          onCacheProducts={cacheAllProducts}
+          onSincronizar={sincronizarVendas}
+          onShowAjuda={() => setShowAjuda(true)}
+        />
 
         {/* Busca */}
         <div className="relative mb-4">
@@ -2065,130 +1997,27 @@ export default function PDVPage() {
 
 
       {/* Modal de Pesagem - Produto por Peso */}
-      <Dialog open={showWeightModal} onOpenChange={(open) => {
-        if (!open) {
+      <WeightModal
+        open={showWeightModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowWeightModal(false)
+            setPendingWeightProduct(null)
+            setWeightValue('')
+            searchRef.current?.focus()
+          }
+        }}
+        produto={pendingWeightProduct}
+        weightValue={weightValue}
+        onWeightChange={setWeightValue}
+        onConfirm={confirmarPesagem}
+        onCancel={() => {
           setShowWeightModal(false)
           setPendingWeightProduct(null)
           setWeightValue('')
           searchRef.current?.focus()
-        }
-      }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Scale className="h-5 w-5 text-orange-500" />
-              Produto por Peso
-            </DialogTitle>
-            <DialogDescription>
-              Digite o peso do produto na balança
-            </DialogDescription>
-          </DialogHeader>
-
-          {pendingWeightProduct && (
-            <div className="space-y-4">
-              {/* Info do produto */}
-              <div className="bg-muted/50 rounded-lg p-4">
-                <p className="font-semibold text-lg">{pendingWeightProduct.nome}</p>
-                <p className="text-sm text-muted-foreground">Código: {pendingWeightProduct.codigo}</p>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-2xl font-bold text-primary">
-                    {formatCurrency(pendingWeightProduct.preco_venda)}/{formatUnidade(pendingWeightProduct.unidade)}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    Estoque: {pendingWeightProduct.estoque_atual} {formatUnidade(pendingWeightProduct.unidade)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Input de peso */}
-              <div className="space-y-2">
-                <Label htmlFor="peso">Peso / Quantidade</Label>
-                <div className="relative">
-                  <Input
-                    ref={weightInputRef}
-                    id="peso"
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,000"
-                    value={weightValue}
-                    onChange={(e) => {
-                      // Permitir apenas números, vírgula e ponto
-                      const value = e.target.value.replace(/[^0-9.,]/g, '')
-                      setWeightValue(value)
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        confirmarPesagem()
-                      } else if (e.key === 'Escape') {
-                        e.preventDefault()
-                        setShowWeightModal(false)
-                        setPendingWeightProduct(null)
-                        setWeightValue('')
-                        searchRef.current?.focus()
-                      }
-                    }}
-                    className="text-3xl h-16 text-center font-bold pr-16"
-                    autoFocus
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xl text-muted-foreground font-medium">
-                    {formatUnidade(pendingWeightProduct.unidade)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Atalhos rápidos de peso */}
-              <div className="grid grid-cols-4 gap-2">
-                {['0.5', '1', '1.5', '2'].map((peso) => (
-                  <Button
-                    key={peso}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setWeightValue(peso.replace('.', ','))}
-                    className="h-10"
-                  >
-                    {peso.replace('.', ',')} {formatUnidade(pendingWeightProduct.unidade)}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Preview do valor */}
-              {weightValue && parseFloat(weightValue.replace(',', '.')) > 0 && (
-                <div className="bg-green-100 dark:bg-green-900/30 rounded-lg p-4 text-center">
-                  <p className="text-sm text-green-600">Valor Total</p>
-                  <p className="text-3xl font-bold text-green-700">
-                    {formatCurrency(pendingWeightProduct.preco_venda * parseFloat(weightValue.replace(',', '.')))}
-                  </p>
-                </div>
-              )}
-
-              {/* Botões */}
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowWeightModal(false)
-                    setPendingWeightProduct(null)
-                    setWeightValue('')
-                    searchRef.current?.focus()
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  className="flex-1 bg-orange-500 hover:bg-orange-600"
-                  onClick={confirmarPesagem}
-                  disabled={!weightValue || parseFloat(weightValue.replace(',', '.')) <= 0}
-                >
-                  <Scale className="h-4 w-4 mr-2" />
-                  Confirmar Peso
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        }}
+      />
 
       {/* Modal Exclusivo PIX */}
       <Dialog open={showPixModal} onOpenChange={setShowPixModal}>
@@ -2242,203 +2071,24 @@ export default function PDVPage() {
       </Dialog>
 
       {/* Modal de Seleção de Cliente (Crediário) */}
-      <Dialog open={showClienteModal} onOpenChange={setShowClienteModal}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Selecionar Cliente
-            </DialogTitle>
-            <DialogDescription>
-              Busque o cliente para venda no crediário
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Busca */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Nome ou CPF/CNPJ do cliente..."
-                className="pl-10"
-                value={clienteSearch}
-                onChange={(e) => setClienteSearch(e.target.value)}
-                autoFocus
-              />
-              {loadingClientes && (
-                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-            </div>
-
-            {/* Lista de clientes */}
-            <ScrollArea className="h-64">
-              {clientes.length > 0 ? (
-                <div className="space-y-2">
-                  {clientes.map((cliente) => {
-                    const creditoDisponivel = cliente.limite_credito - cliente.saldo_devedor
-                    const temCredito = creditoDisponivel >= total
-
-                    return (
-                      <button
-                        key={cliente.id}
-                        className={`w-full p-3 rounded-lg border text-left transition-colors ${
-                          temCredito
-                            ? 'hover:bg-muted cursor-pointer'
-                            : 'opacity-50 cursor-not-allowed bg-muted/50'
-                        }`}
-                        onClick={() => temCredito && selecionarCliente(cliente)}
-                        disabled={!temCredito}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium">{cliente.nome}</p>
-                            <p className="text-sm text-muted-foreground">{cliente.cpf_cnpj}</p>
-                            {cliente.telefone && (
-                              <p className="text-xs text-muted-foreground">{cliente.telefone}</p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-muted-foreground">Limite</p>
-                            <p className="text-sm font-medium">{formatCurrency(cliente.limite_credito)}</p>
-                            <p className={`text-xs ${temCredito ? 'text-green-600' : 'text-red-600'}`}>
-                              Disponível: {formatCurrency(creditoDisponivel)}
-                            </p>
-                          </div>
-                        </div>
-                        {!temCredito && (
-                          <p className="text-xs text-red-600 mt-1">
-                            Crédito insuficiente para esta venda
-                          </p>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              ) : clienteSearch ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>Nenhum cliente encontrado</p>
-                  <Button variant="link" asChild className="mt-2">
-                    <Link href="/dashboard/clientes/novo">Cadastrar novo cliente</Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Search className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>Digite para buscar clientes</p>
-                </div>
-              )}
-            </ScrollArea>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowClienteModal(false)}>
-              Cancelar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ClientModal
+        open={showClienteModal}
+        onOpenChange={setShowClienteModal}
+        search={clienteSearch}
+        onSearchChange={setClienteSearch}
+        clientes={clientes}
+        loading={loadingClientes}
+        total={total}
+        onSelectClient={selecionarCliente}
+      />
 
       {/* Modal de Atalhos de Teclado */}
-      <Dialog open={showAjuda} onOpenChange={setShowAjuda}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Keyboard className="h-5 w-5" />
-              Atalhos e Scanner
-            </DialogTitle>
-            <DialogDescription>
-              Use os atalhos e o scanner para agilizar suas vendas
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Scanner info */}
-            <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Scan className="h-4 w-4 text-green-600" />
-                <span className="font-medium text-green-700">Leitor de Código de Barras</span>
-                <Badge variant={scannerEnabled ? 'default' : 'secondary'} className={scannerEnabled ? 'bg-green-500' : ''}>
-                  {scannerEnabled ? 'Ativo' : 'Desativado'}
-                </Badge>
-              </div>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• Scanner USB funciona automaticamente</li>
-                <li>• Produto é adicionado ao escanear</li>
-                <li>• Beep sonoro confirma a leitura</li>
-                <li>• Borda verde indica detecção do scanner</li>
-              </ul>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F1</kbd>
-                <span>Esta ajuda</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F2</kbd>
-                <span>Buscar produto</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F3</kbd>
-                <span>Novo cliente</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F4</kbd>
-                <span>Confirmar venda</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F5</kbd>
-                <span>Limpar carrinho</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F6</kbd>
-                <span>Pagar Dinheiro</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F7</kbd>
-                <span>Pagar Crédito</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F8</kbd>
-                <span>Pagar Débito</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F9</kbd>
-                <span>Pagar PIX</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F10</kbd>
-                <span>Crediário</span>
-              </div>
-              {fidelidadeConfig && (
-                <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                  <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F11</kbd>
-                  <span>Fidelidade</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">F12</kbd>
-                <span>Abrir/Fechar Caixa</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">Ctrl+D</kbd>
-                <span>Aplicar Desconto</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-muted">
-                <kbd className="px-2 py-1 bg-background border rounded text-xs font-mono">ESC</kbd>
-                <span>Fechar modal / Cancelar</span>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button onClick={() => setShowAjuda(false)}>
-              Entendi
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <HelpModal
+        open={showAjuda}
+        onOpenChange={setShowAjuda}
+        scannerEnabled={scannerEnabled}
+        showFidelidade={!!fidelidadeConfig}
+      />
 
       {/* Modal de Desconto */}
       <DiscountModal
