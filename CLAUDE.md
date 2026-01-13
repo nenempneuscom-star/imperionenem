@@ -51,6 +51,10 @@ src/
 │       ├── pontos-tab.tsx
 │       ├── config-tab.tsx
 │       ├── ajuste-modal.tsx
+│       ├── produto-card.tsx      # Produtos resgataveis
+│       ├── produtos-grid.tsx
+│       ├── produto-modal.tsx
+│       ├── delete-produto-dialog.tsx
 │       └── types.ts
 ├── lib/
 │   ├── supabase/          # Cliente Supabase
@@ -93,6 +97,12 @@ Programa de fidelidade modularizado em `components/fidelidade`:
 - **PontosTab:** Lista de clientes com pontos, historico de movimentos
 - **ConfigTab:** Configuracao do programa (pontos/real, valor resgate, validade)
 - **AjusteModal:** Adicionar/remover pontos manualmente
+
+Produtos resgataveis (`/dashboard/fidelidade/produtos`):
+- **ProdutoCard:** Card individual de produto resgatavel
+- **ProdutosGrid:** Grid com busca e estado vazio
+- **ProdutoModal:** Modal de criar/editar com busca de produtos do estoque
+- **DeleteProdutoDialog:** Confirmacao de exclusao
 
 ### Relatorios (`/dashboard/relatorios`)
 14 tabs de relatorios, cada uma com componente modular em `components/relatorios/tabs/`:
@@ -152,7 +162,7 @@ npm run lint     # Verificar linting
    - `relatorios` - 14 tabs de relatorios
    - `configuracoes` - 4 tabs de configuracoes gerais
    - `fiscal-config` - 4 tabs de configuracoes fiscais
-   - `fidelidade` - 2 tabs + 1 modal
+   - `fidelidade` - 2 tabs + 1 modal + 4 componentes de produtos
    - `pdv-caixa` - 4 modals + 4 cards
 2. **Tipos compartilhados:** Usar exports de `@/components/*/types.ts`
 3. **Idioma:** Interface em portugues brasileiro (sem acentos em codigo)
@@ -185,7 +195,10 @@ import {
   PontosTab,
   ConfigTab,
   AjusteModal,
+  ProdutosGrid,
+  ProdutoModal,
   type FidelidadeConfig,
+  type ProdutoFidelidade,
 } from '@/components/fidelidade'
 
 // Importar de pdv-caixa
