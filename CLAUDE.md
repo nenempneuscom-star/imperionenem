@@ -61,12 +61,18 @@ src/
 │   │   ├── produto-modal.tsx
 │   │   ├── delete-produto-dialog.tsx
 │   │   └── types.ts
-│   └── orcamentos/        # Modulo de orcamentos
-│       ├── cliente-*.tsx  # Card, Form, Modal, Info
-│       ├── itens-*.tsx    # Table, Empty
-│       ├── *-card.tsx     # Observacoes, Resumo, Validade, Acoes
-│       ├── *-modal.tsx    # Produto, Convert dialog
-│       ├── totais-display.tsx
+│   ├── orcamentos/        # Modulo de orcamentos
+│   │   ├── cliente-*.tsx  # Card, Form, Modal, Info
+│   │   ├── itens-*.tsx    # Table, Empty
+│   │   ├── *-card.tsx     # Observacoes, Resumo, Validade, Acoes
+│   │   ├── *-modal.tsx    # Produto, Convert dialog
+│   │   ├── totais-display.tsx
+│   │   └── types.ts
+│   └── nfse/              # Emissao de NFS-e
+│       ├── tomador-card.tsx
+│       ├── servico-card.tsx
+│       ├── valores-card.tsx
+│       ├── form-actions.tsx
 │       └── types.ts
 ├── lib/
 │   ├── supabase/          # Cliente Supabase
@@ -161,12 +167,20 @@ Produtos resgataveis (`/dashboard/fidelidade/produtos`):
 ### Fiscal (`/dashboard/fiscal`)
 - Emissao de NF-e
 - Emissao de NFC-e
-- NFS-e (servicos)
-- Configuracoes fiscais (`/dashboard/fiscal/configuracoes`) - modularizado em `components/fiscal-config`:
-  - **GeralTab:** Regime tributario, ambiente (producao/homologacao)
-  - **CertificadoTab:** Upload e status do certificado digital
-  - **NFCeTab:** Serie, CSC, CFOP para NFC-e
-  - **NFeTab:** Serie, CFOP para NF-e
+- NFS-e (servicos) - modularizado em `components/nfse`
+- Configuracoes fiscais (`/dashboard/fiscal/configuracoes`) - modularizado em `components/fiscal-config`
+
+NFS-e (`/dashboard/fiscal/nfse/nova`) - modularizado em `components/nfse`:
+- **TomadorCard:** Dados do tomador com busca de cliente e CEP
+- **ServicoCard:** Selecao de servico (LC 116) e discriminacao
+- **ValoresCard:** Valores, impostos, retencoes e resumo de calculo
+- **FormActions:** Botoes cancelar/gerar RPS
+
+Configuracoes fiscais (`/dashboard/fiscal/configuracoes`) - modularizado em `components/fiscal-config`:
+- **GeralTab:** Regime tributario, ambiente (producao/homologacao)
+- **CertificadoTab:** Upload e status do certificado digital
+- **NFCeTab:** Serie, CSC, CFOP para NFC-e
+- **NFeTab:** Serie, CFOP para NF-e
 
 ### Orcamentos (`/dashboard/orcamentos`)
 Modulo de orcamentos modularizado em `components/orcamentos`:
@@ -217,6 +231,7 @@ npm run lint     # Verificar linting
    - `fiscal-config` - 4 tabs de configuracoes fiscais
    - `fidelidade` - 2 tabs + 1 modal + 4 componentes de produtos
    - `orcamentos` - 14 componentes (cliente, itens, modals, cards)
+   - `nfse` - 4 cards + tipos + utilitarios de calculo
 2. **Tipos compartilhados:** Usar exports de `@/components/*/types.ts`
 3. **Idioma:** Interface em portugues brasileiro (sem acentos em codigo)
 4. **Padrao de tabs:** Componentes de tab usam render props (`filterComponent`, `exportButton`)
@@ -294,4 +309,18 @@ import {
   formatCurrency,
   getStatusConfig,
 } from '@/components/orcamentos'
+
+// Importar de nfse
+import {
+  TomadorCard,
+  ServicoCard,
+  ValoresCard,
+  FormActions,
+  type Servico,
+  type ClienteNFSe,
+  type NFSeFormData,
+  FORM_DATA_INICIAL,
+  calcularBaseCalculo,
+  calcularValorLiquido,
+} from '@/components/nfse'
 ```
