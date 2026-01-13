@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -23,89 +22,64 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import {
-  Search,
-  Plus,
-  Minus,
-  Trash2,
+  ShoppingCart,
+  Loader2,
+  CheckCircle,
+  FileText,
+  Printer,
+  Users,
+  Star,
+  Scale,
+  Percent,
   CreditCard,
   DollarSign,
   QrCode,
+  Trash2,
+  Layers,
   ArrowLeft,
-  ShoppingCart,
-  X,
-  Loader2,
-  CheckCircle,
   Wifi,
   WifiOff,
-  RefreshCw,
-  Download,
   CloudOff,
-  FileText,
-  Printer,
-  Wallet,
+  Download,
+  RefreshCw,
   LockOpen,
-  Users,
-  Star,
+  Wallet,
   Keyboard,
   Scan,
-  Scale,
-  Percent,
-  Layers,
+  Search,
+  Plus,
+  Minus,
+  X,
 } from 'lucide-react'
-import { printReceipt, type DadosRecibo } from '@/components/pdv/receipt'
-import { PixQRCode } from '@/components/pdv/pix-qrcode'
-import { DiscountModal } from '@/components/pdv/discount-modal'
-import { PaymentCombinationModal } from '@/components/pdv/payment-combination-modal'
 
-interface Produto {
-  id: string
-  codigo: string
-  codigo_barras: string | null
-  nome: string
-  preco_venda: number
-  estoque_atual: number
-  unidade: string
-  ncm?: string
-}
-
-interface Cliente {
-  id: string
-  nome: string
-  cpf_cnpj: string
-  telefone?: string
-  limite_credito: number
-  saldo_devedor: number
-}
-
-interface FidelidadeConfig {
-  id: string
-  pontos_por_real: number
-  valor_ponto_resgate: number
-  validade_dias: number
-  ativo: boolean
-}
-
-interface ClientePontos {
-  saldo_pontos: number
-  total_acumulado: number
-}
-
-interface NFCeResult {
-  sucesso: boolean
-  chave?: string
-  protocolo?: string
-  mensagem: string
-}
-
-interface ConfigDesconto {
-  desconto_maximo_percentual: number
-  desconto_maximo_valor: number | null
-  motivo_obrigatorio: boolean
-  permitir_desconto_item: boolean
-  permitir_desconto_total: boolean
-  requer_autorizacao_acima_percentual: number | null
-  motivos_predefinidos: string[]
-}
+// PDV Components
+import {
+  PDVHeader,
+  ProductSearch,
+  CartItems,
+  PaymentMethods,
+  WeightModal,
+  ClientModal,
+  HelpModal,
+  DiscountModal,
+  PaymentCombinationModal,
+  PixQRCode,
+  printReceipt,
+  type DadosRecibo,
+  type Produto,
+  type Cliente,
+  type FidelidadeConfig,
+  type ClientePontos,
+  type NFCeResult,
+  type ConfigDesconto,
+  type CaixaAberto,
+  type Empresa,
+  type VendaFinalizada,
+  type ItemDesconto,
+  formatCurrency,
+  formatUnidade,
+  isProdutoPesavel,
+} from '@/components/pdv'
 
 export default function PDVPage() {
   const supabase = createClient()
@@ -129,9 +103,9 @@ export default function PDVPage() {
   const [nfceResult, setNfceResult] = useState<NFCeResult | null>(null)
   const [cpfCliente, setCpfCliente] = useState('')
   const [fiscalConfigurado, setFiscalConfigurado] = useState(false)
-  const [caixaAberto, setCaixaAberto] = useState<{ id: string; valor_abertura: number } | null>(null)
+  const [caixaAberto, setCaixaAberto] = useState<CaixaAberto | null>(null)
   const [loadingCaixa, setLoadingCaixa] = useState(true)
-  const [empresa, setEmpresa] = useState<{ nome: string; cnpj: string; endereco?: string; cidade?: string; uf?: string; cep?: string; telefone?: string; chavePix?: string } | null>(null)
+  const [empresa, setEmpresa] = useState<Empresa | null>(null)
   // Estados para crediário
   const [showClienteModal, setShowClienteModal] = useState(false)
   const [clienteSearch, setClienteSearch] = useState('')
@@ -153,30 +127,13 @@ export default function PDVPage() {
   // Estados para desconto
   const [configDesconto, setConfigDesconto] = useState<ConfigDesconto | null>(null)
   const [showDescontoModal, setShowDescontoModal] = useState(false)
-  const [itemDesconto, setItemDesconto] = useState<{
-    id: string
-    nome: string
-    preco: number
-    quantidade: number
-  } | null>(null)
+  const [itemDesconto, setItemDesconto] = useState<ItemDesconto | null>(null)
   // Estados para produto pesável
   const [showWeightModal, setShowWeightModal] = useState(false)
   const [pendingWeightProduct, setPendingWeightProduct] = useState<Produto | null>(null)
   const [weightValue, setWeightValue] = useState('')
   const weightInputRef = useRef<HTMLInputElement>(null)
-  const [vendaFinalizada, setVendaFinalizada] = useState<{
-    numero?: number
-    itens: { codigo: string; nome: string; quantidade: number; preco: number; total: number }[]
-    subtotal: number
-    desconto: number
-    total: number
-    pagamentos: { forma: string; valor: number }[]
-    valorRecebido?: number
-    troco?: number
-    operador: string
-    valorTributos?: number
-    percentualTributos?: number
-  } | null>(null)
+  const [vendaFinalizada, setVendaFinalizada] = useState<VendaFinalizada | null>(null)
 
   const {
     items,
