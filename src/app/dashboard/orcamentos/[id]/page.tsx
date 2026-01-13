@@ -1,106 +1,42 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import {
   ArrowLeft,
   Printer,
   Send,
   Edit,
-  CheckCircle,
-  XCircle,
-  ShoppingCart,
   Loader2,
-  Building2,
-  User,
-  Phone,
-  Mail,
-  Calendar,
   FileText,
-  Download,
 } from 'lucide-react'
 import { printOrcamento } from '@/components/orcamento/orcamento-print'
 
-interface Orcamento {
-  id: string
-  numero: number
-  empresa_id: string
-  usuario_id: string
-  cliente_id: string | null
-  cliente_nome: string | null
-  cliente_telefone: string | null
-  cliente_email: string | null
-  cliente_cpf_cnpj: string | null
-  subtotal: number
-  desconto: number
-  desconto_percentual: number
-  total: number
-  status: string
-  validade_dias: number
-  data_validade: string
-  observacoes: string | null
-  condicoes: string | null
-  created_at: string
-  updated_at: string
-  clientes: {
-    nome: string
-    cpf_cnpj: string
-    telefone: string
-    email: string
-    endereco: any
-  } | null
-  usuarios: { nome: string } | null
-  empresas: {
-    nome_fantasia: string
-    razao_social: string
-    cnpj: string
-    telefone: string
-    endereco: any
-  } | null
-}
-
-interface OrcamentoItem {
-  id: string
-  codigo: string | null
-  nome: string
-  descricao: string | null
-  unidade: string
-  quantidade: number
-  preco_unitario: number
-  desconto: number
-  total: number
-}
+import {
+  type Orcamento,
+  type ItemOrcamento,
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  getStatusConfig,
+  ClienteInfo,
+  ItensTable,
+  TotaisDisplay,
+  ValidadeCard,
+  AcoesCard,
+  ConvertDialog,
+} from '@/components/orcamentos'
 
 export default function OrcamentoViewPage() {
   const params = useParams()
   const router = useRouter()
-  const supabase = createClient()
   const [orcamento, setOrcamento] = useState<Orcamento | null>(null)
-  const [itens, setItens] = useState<OrcamentoItem[]>([])
+  const [itens, setItens] = useState<ItemOrcamento[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [showConvertDialog, setShowConvertDialog] = useState(false)
@@ -139,7 +75,7 @@ export default function OrcamentoViewPage() {
 
       toast.success(`Status atualizado para ${status}`)
       fetchOrcamento()
-    } catch (error) {
+    } catch {
       toast.error('Erro ao atualizar status')
     }
   }
@@ -223,7 +159,6 @@ export default function OrcamentoViewPage() {
     const clienteTelefone = orcamento.clientes?.telefone || orcamento.cliente_telefone
     const clienteNome = orcamento.clientes?.nome || orcamento.cliente_nome || 'Cliente'
 
-    // Formatar mensagem
     const mensagem = `*ORCAMENTO #${orcamento.numero}*
 Nenem Pneus
 
@@ -241,11 +176,8 @@ Valido ate: ${formatDate(orcamento.data_validade)}
 ${orcamento.condicoes ? `_${orcamento.condicoes}_\n` : ''}
 Aguardamos seu retorno!`
 
-    // Limpar telefone
     let telefone = clienteTelefone?.replace(/\D/g, '') || ''
-    if (telefone.length === 11) {
-      telefone = '55' + telefone
-    } else if (telefone.length === 10) {
+    if (telefone.length === 11 || telefone.length === 10) {
       telefone = '55' + telefone
     }
 
@@ -254,33 +186,6 @@ Aguardamos seu retorno!`
       : `https://wa.me/?text=${encodeURIComponent(mensagem)}`
 
     window.open(url, '_blank')
-  }
-
-  function formatCurrency(value: number) {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value)
-  }
-
-  function formatDate(date: string) {
-    return new Date(date).toLocaleDateString('pt-BR')
-  }
-
-  function formatDateTime(date: string) {
-    return new Date(date).toLocaleString('pt-BR')
-  }
-
-  function getStatusBadge(status: string) {
-    const configs: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-      pendente: { label: 'Pendente', variant: 'secondary' },
-      aprovado: { label: 'Aprovado', variant: 'default' },
-      rejeitado: { label: 'Rejeitado', variant: 'destructive' },
-      expirado: { label: 'Expirado', variant: 'outline' },
-      convertido: { label: 'Convertido', variant: 'default' },
-    }
-    const config = configs[status] || configs.pendente
-    return <Badge variant={config.variant}>{config.label}</Badge>
   }
 
   if (loading) {
@@ -306,6 +211,7 @@ Aguardamos seu retorno!`
   const clienteTelefone = orcamento.clientes?.telefone || orcamento.cliente_telefone
   const clienteEmail = orcamento.clientes?.email || orcamento.cliente_email
   const clienteCpfCnpj = orcamento.clientes?.cpf_cnpj || orcamento.cliente_cpf_cnpj
+  const statusConfig = getStatusConfig(orcamento.status)
 
   return (
     <div className="space-y-6">
@@ -320,7 +226,7 @@ Aguardamos seu retorno!`
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
               Orcamento #{orcamento.numero}
-              {getStatusBadge(orcamento.status)}
+              <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
             </h1>
             <p className="text-muted-foreground">
               Criado em {formatDateTime(orcamento.created_at)}
@@ -359,98 +265,25 @@ Aguardamos seu retorno!`
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Cliente */}
-            <div className="p-4 bg-muted rounded-lg">
-              <h3 className="font-semibold flex items-center gap-2 mb-3">
-                <User className="h-4 w-4" />
-                Cliente
-              </h3>
-              <div className="grid gap-2 md:grid-cols-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Nome</p>
-                  <p className="font-medium">{clienteNome || 'Nao informado'}</p>
-                </div>
-                {clienteCpfCnpj && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">CPF/CNPJ</p>
-                    <p className="font-medium">{clienteCpfCnpj}</p>
-                  </div>
-                )}
-                {clienteTelefone && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Telefone</p>
-                    <p className="font-medium">{clienteTelefone}</p>
-                  </div>
-                )}
-                {clienteEmail && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{clienteEmail}</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ClienteInfo
+              nome={clienteNome}
+              cpfCnpj={clienteCpfCnpj}
+              telefone={clienteTelefone}
+              email={clienteEmail}
+            />
 
             {/* Itens */}
             <div>
               <h3 className="font-semibold mb-3">Itens ({itens.length})</h3>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Codigo</TableHead>
-                      <TableHead>Descricao</TableHead>
-                      <TableHead className="text-center">Qtd</TableHead>
-                      <TableHead className="text-right">Unitario</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {itens.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-mono text-sm">
-                          {item.codigo || '-'}
-                        </TableCell>
-                        <TableCell>
-                          <p className="font-medium">{item.nome}</p>
-                          {item.descricao && (
-                            <p className="text-xs text-muted-foreground">{item.descricao}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {item.quantidade} {item.unidade}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(item.preco_unitario)}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(item.total)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <ItensTable itens={itens} />
             </div>
 
             {/* Totais */}
-            <div className="flex justify-end">
-              <div className="w-64 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>{formatCurrency(orcamento.subtotal)}</span>
-                </div>
-                {orcamento.desconto > 0 && (
-                  <div className="flex justify-between text-red-600">
-                    <span>Desconto</span>
-                    <span>-{formatCurrency(orcamento.desconto)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-lg font-bold border-t pt-2">
-                  <span>Total</span>
-                  <span>{formatCurrency(orcamento.total)}</span>
-                </div>
-              </div>
-            </div>
+            <TotaisDisplay
+              subtotal={orcamento.subtotal}
+              desconto={orcamento.desconto}
+              total={orcamento.total}
+            />
 
             {/* Observacoes */}
             {orcamento.observacoes && (
@@ -472,85 +305,27 @@ Aguardamos seu retorno!`
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Status e Validade */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Validade
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Valido ate</p>
-                <p className="text-xl font-bold">{formatDate(orcamento.data_validade)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Status</p>
-                <div className="mt-1">{getStatusBadge(orcamento.status)}</div>
-              </div>
-            </CardContent>
-          </Card>
+          <ValidadeCard
+            dataValidade={orcamento.data_validade}
+            status={orcamento.status}
+          />
 
-          {/* Acoes */}
-          {orcamento.status !== 'convertido' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Acoes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {orcamento.status === 'pendente' && (
-                  <>
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() => updateStatus('aprovado')}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                      Aprovar
-                    </Button>
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() => updateStatus('rejeitado')}
-                    >
-                      <XCircle className="h-4 w-4 mr-2 text-red-600" />
-                      Rejeitar
-                    </Button>
-                  </>
-                )}
-                {(orcamento.status === 'pendente' || orcamento.status === 'aprovado') && (
-                  <Button
-                    className="w-full"
-                    onClick={() => setShowConvertDialog(true)}
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Converter em Venda
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          <AcoesCard
+            status={orcamento.status}
+            onAprovar={() => updateStatus('aprovado')}
+            onRejeitar={() => updateStatus('rejeitado')}
+            onConverter={() => setShowConvertDialog(true)}
+          />
         </div>
       </div>
 
       {/* Dialog Converter */}
-      <AlertDialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Converter em Venda</AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja converter este orcamento em uma venda? Os produtos serao baixados do estoque.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConvert} disabled={actionLoading}>
-              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Converter'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConvertDialog
+        open={showConvertDialog}
+        onOpenChange={setShowConvertDialog}
+        onConfirm={handleConvert}
+        loading={actionLoading}
+      />
     </div>
   )
 }

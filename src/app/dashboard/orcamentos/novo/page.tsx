@@ -1,78 +1,33 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from 'sonner'
+import { ArrowLeft, Search, Plus, Save, Loader2, User, Package } from 'lucide-react'
+
 import {
-  ArrowLeft,
-  Search,
-  Plus,
-  Trash2,
-  Save,
-  Loader2,
-  User,
-  Package,
-  FileText,
-} from 'lucide-react'
-
-interface Produto {
-  id: string
-  codigo: string
-  nome: string
-  preco_venda: number
-  estoque_atual: number
-  unidade: string
-}
-
-interface Cliente {
-  id: string
-  nome: string
-  cpf_cnpj: string
-  telefone: string
-  email: string
-}
-
-interface ItemOrcamento {
-  id: string
-  produto_id: string | null
-  codigo: string
-  nome: string
-  unidade: string
-  quantidade: number
-  preco_unitario: number
-  desconto: number
-  total: number
-}
+  type Produto,
+  type Cliente,
+  type ClienteManual,
+  type ItemOrcamento,
+  ClienteCard,
+  ClienteForm,
+  ClienteModal,
+  ItensTable,
+  ItensEmpty,
+  ObservacoesCard,
+  ResumoCard,
+  ProdutoModal,
+} from '@/components/orcamentos'
 
 export default function NovoOrcamentoPage() {
   const router = useRouter()
   const supabase = createClient()
-  const searchRef = useRef<HTMLInputElement>(null)
 
   const [saving, setSaving] = useState(false)
 
@@ -82,7 +37,7 @@ export default function NovoOrcamentoPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loadingClientes, setLoadingClientes] = useState(false)
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null)
-  const [clienteManual, setClienteManual] = useState({
+  const [clienteManual, setClienteManual] = useState<ClienteManual>({
     nome: '',
     telefone: '',
     email: '',
@@ -185,7 +140,7 @@ export default function NovoOrcamentoPage() {
     setProdutoSearch('')
   }
 
-  function atualizarItem(id: string, campo: string, valor: any) {
+  function atualizarItem(id: string, campo: string, valor: number) {
     setItens(itens.map(item => {
       if (item.id === id) {
         const novoItem = { ...item, [campo]: valor }
@@ -200,11 +155,10 @@ export default function NovoOrcamentoPage() {
     setItens(itens.filter(i => i.id !== id))
   }
 
-  function formatCurrency(value: number) {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value)
+  function selecionarCliente(cliente: Cliente) {
+    setClienteSelecionado(cliente)
+    setShowClienteModal(false)
+    setClienteSearch('')
   }
 
   async function salvarOrcamento() {
@@ -296,61 +250,18 @@ export default function NovoOrcamentoPage() {
             </CardHeader>
             <CardContent>
               {clienteSelecionado ? (
-                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                  <div>
-                    <p className="font-medium">{clienteSelecionado.nome}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {clienteSelecionado.cpf_cnpj} | {clienteSelecionado.telefone}
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => setClienteSelecionado(null)}>
-                    Alterar
-                  </Button>
-                </div>
+                <ClienteCard
+                  cliente={clienteSelecionado}
+                  onAlterar={() => setClienteSelecionado(null)}
+                />
               ) : (
                 <div className="space-y-4">
                   <Button variant="outline" onClick={() => setShowClienteModal(true)}>
                     <Search className="h-4 w-4 mr-2" />
                     Buscar Cliente Cadastrado
                   </Button>
-
                   <Separator />
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Nome</Label>
-                      <Input
-                        placeholder="Nome do cliente"
-                        value={clienteManual.nome}
-                        onChange={(e) => setClienteManual({ ...clienteManual, nome: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Telefone</Label>
-                      <Input
-                        placeholder="(00) 00000-0000"
-                        value={clienteManual.telefone}
-                        onChange={(e) => setClienteManual({ ...clienteManual, telefone: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Email</Label>
-                      <Input
-                        type="email"
-                        placeholder="email@exemplo.com"
-                        value={clienteManual.email}
-                        onChange={(e) => setClienteManual({ ...clienteManual, email: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>CPF/CNPJ</Label>
-                      <Input
-                        placeholder="000.000.000-00"
-                        value={clienteManual.cpf_cnpj}
-                        onChange={(e) => setClienteManual({ ...clienteManual, cpf_cnpj: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                  <ClienteForm cliente={clienteManual} onChange={setClienteManual} />
                 </div>
               )}
             </CardContent>
@@ -377,285 +288,64 @@ export default function NovoOrcamentoPage() {
             </CardHeader>
             <CardContent>
               {itens.length === 0 ? (
-                <div className="text-center py-10">
-                  <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Nenhum item adicionado</p>
-                  <Button variant="outline" className="mt-4" onClick={() => setShowProdutoModal(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Primeiro Item
-                  </Button>
-                </div>
+                <ItensEmpty onAddItem={() => setShowProdutoModal(true)} />
               ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Produto</TableHead>
-                        <TableHead className="w-[100px]">Qtd</TableHead>
-                        <TableHead className="w-[120px]">Preco</TableHead>
-                        <TableHead className="w-[100px]">Desc.</TableHead>
-                        <TableHead className="w-[120px] text-right">Total</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {itens.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{item.nome}</p>
-                              <p className="text-xs text-muted-foreground">{item.codigo}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="1"
-                              step="0.001"
-                              value={item.quantidade}
-                              onChange={(e) => atualizarItem(item.id, 'quantidade', parseFloat(e.target.value) || 1)}
-                              className="w-20"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={item.preco_unitario}
-                              onChange={(e) => atualizarItem(item.id, 'preco_unitario', parseFloat(e.target.value) || 0)}
-                              className="w-24"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={item.desconto}
-                              onChange={(e) => atualizarItem(item.id, 'desconto', parseFloat(e.target.value) || 0)}
-                              className="w-20"
-                            />
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(item.total)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removerItem(item.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                <ItensTable
+                  itens={itens}
+                  editable
+                  onUpdateItem={atualizarItem}
+                  onRemoveItem={removerItem}
+                />
               )}
             </CardContent>
           </Card>
 
           {/* Observacoes */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Observacoes e Condicoes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Observacoes</Label>
-                <Textarea
-                  placeholder="Observacoes gerais do orcamento..."
-                  value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Condicoes de Pagamento/Entrega</Label>
-                <Textarea
-                  placeholder="Ex: Pagamento a vista com 5% de desconto. Entrega em ate 3 dias uteis..."
-                  value={condicoes}
-                  onChange={(e) => setCondicoes(e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <ObservacoesCard
+            observacoes={observacoes}
+            onObservacoesChange={setObservacoes}
+            condicoes={condicoes}
+            onCondicoesChange={setCondicoes}
+          />
         </div>
 
         {/* Coluna Lateral - Resumo */}
         <div className="space-y-6">
-          <Card className="sticky top-4">
-            <CardHeader>
-              <CardTitle>Resumo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Validade (dias)</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={validadeDias}
-                  onChange={(e) => setValidadeDias(parseInt(e.target.value) || 7)}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>{formatCurrency(subtotal)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-muted-foreground">Desconto</span>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={desconto}
-                    onChange={(e) => setDesconto(parseFloat(e.target.value) || 0)}
-                    className="w-28 text-right"
-                  />
-                </div>
-                <Separator />
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span>{formatCurrency(total)}</span>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="text-sm text-muted-foreground">
-                <p>{itens.length} item(s)</p>
-                <p>Valido por {validadeDias} dias</p>
-              </div>
-
-              <Button className="w-full" onClick={salvarOrcamento} disabled={saving || itens.length === 0}>
-                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                Salvar Orcamento
-              </Button>
-            </CardContent>
-          </Card>
+          <ResumoCard
+            validadeDias={validadeDias}
+            onValidadeChange={setValidadeDias}
+            subtotal={subtotal}
+            desconto={desconto}
+            onDescontoChange={setDesconto}
+            total={total}
+            itensCount={itens.length}
+            saving={saving}
+            onSalvar={salvarOrcamento}
+            disabled={itens.length === 0}
+          />
         </div>
       </div>
 
-      {/* Modal Buscar Cliente */}
-      <Dialog open={showClienteModal} onOpenChange={setShowClienteModal}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Buscar Cliente</DialogTitle>
-            <DialogDescription>
-              Busque pelo nome, CPF/CNPJ ou telefone
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar..."
-                value={clienteSearch}
-                onChange={(e) => setClienteSearch(e.target.value)}
-                className="pl-10"
-                autoFocus
-              />
-            </div>
-            <ScrollArea className="h-[300px]">
-              {loadingClientes ? (
-                <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : clientes.length === 0 ? (
-                <p className="text-center text-muted-foreground py-10">
-                  {clienteSearch.length < 2 ? 'Digite para buscar...' : 'Nenhum cliente encontrado'}
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {clientes.map((cliente) => (
-                    <button
-                      key={cliente.id}
-                      onClick={() => {
-                        setClienteSelecionado(cliente)
-                        setShowClienteModal(false)
-                        setClienteSearch('')
-                      }}
-                      className="w-full p-3 text-left rounded-lg border hover:bg-muted transition-colors"
-                    >
-                      <p className="font-medium">{cliente.nome}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {cliente.cpf_cnpj} | {cliente.telefone}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Modals */}
+      <ClienteModal
+        open={showClienteModal}
+        onOpenChange={setShowClienteModal}
+        search={clienteSearch}
+        onSearchChange={setClienteSearch}
+        clientes={clientes}
+        loading={loadingClientes}
+        onSelect={selecionarCliente}
+      />
 
-      {/* Modal Buscar Produto */}
-      <Dialog open={showProdutoModal} onOpenChange={setShowProdutoModal}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Adicionar Produto</DialogTitle>
-            <DialogDescription>
-              Busque pelo nome, codigo ou codigo de barras
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar produto..."
-                value={produtoSearch}
-                onChange={(e) => setProdutoSearch(e.target.value)}
-                className="pl-10"
-                autoFocus
-              />
-            </div>
-            <ScrollArea className="h-[400px]">
-              {loadingProdutos ? (
-                <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : produtos.length === 0 ? (
-                <p className="text-center text-muted-foreground py-10">
-                  {produtoSearch.length < 2 ? 'Digite para buscar...' : 'Nenhum produto encontrado'}
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {produtos.map((produto) => (
-                    <button
-                      key={produto.id}
-                      onClick={() => adicionarProduto(produto)}
-                      className="w-full p-3 text-left rounded-lg border hover:bg-muted transition-colors"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">{produto.nome}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Codigo: {produto.codigo} | Estoque: {produto.estoque_atual} {produto.unidade}
-                          </p>
-                        </div>
-                        <p className="font-bold text-lg">{formatCurrency(produto.preco_venda)}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ProdutoModal
+        open={showProdutoModal}
+        onOpenChange={setShowProdutoModal}
+        search={produtoSearch}
+        onSearchChange={setProdutoSearch}
+        produtos={produtos}
+        loading={loadingProdutos}
+        onSelect={adicionarProduto}
+      />
     </div>
   )
 }
