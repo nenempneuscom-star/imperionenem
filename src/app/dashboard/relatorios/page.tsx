@@ -27,6 +27,7 @@ import {
   Download,
   Search,
   TrendingUp,
+  TrendingDown,
   CreditCard,
   Banknote,
   QrCode,
@@ -34,8 +35,21 @@ import {
   Users,
   Calendar,
   Wallet,
+  Percent,
+  AlertTriangle,
+  Clock,
+  FileText,
+  Heart,
+  UserX,
+  ArrowUpRight,
+  ArrowDownRight,
+  HandCoins,
+  Activity,
+  PieChart,
+  Layers,
 } from 'lucide-react'
 
+// Interfaces existentes
 interface VendaRelatorio {
   id: string
   numero: number
@@ -85,6 +99,141 @@ interface ProdutoCurvaABC {
   classe: 'A' | 'B' | 'C'
 }
 
+// Novas interfaces para os relatorios "fofoqueira"
+interface RelatorioDescontos {
+  resumo: {
+    totalDesconto: number
+    totalDescontoVendas: number
+    totalDescontoItens: number
+    quantidadeVendas: number
+    quantidadeItens: number
+  }
+  porMotivo: { motivo: string; quantidade: number; valor: number }[]
+  porOperador: { operador: string; quantidade: number; valor: number }[]
+  porProduto: { codigo: string; nome: string; quantidade: number; valor: number }[]
+}
+
+interface RelatorioCrediario {
+  resumo: {
+    totalCrediario: number
+    totalEmAberto: number
+    totalAtrasado: number
+    totalRecebido: number
+    taxaRecuperacao: number
+    quantidadeParcelasAbertas: number
+    quantidadeParcelasAtrasadas: number
+  }
+  clientesDevedores: { cliente: string; telefone: string; totalAberto: number; totalAtrasado: number; parcelas: number }[]
+  parcelasAtrasadas: any[]
+}
+
+interface RelatorioClientes {
+  resumo: {
+    totalClientes: number
+    clientesNovos: number
+    totalVendas: number
+    vendasConsumidor: number
+    vendasCliente: number
+    percentualIdentificado: number
+  }
+  melhoresClientes: any[]
+  maisFrequentes: any[]
+  clientesSumiram: any[]
+}
+
+interface RelatorioOperacional {
+  resumo: {
+    totalVendas: number
+    valorTotal: number
+    vendasCanceladas: number
+    valorCancelado: number
+    taxaCancelamento: number
+    vendasPagamentoCombinado?: number
+    percentualCombinado?: number
+  }
+  horariosPico: { hora: number; quantidade: number; valor: number }[]
+  diasSemana: { dia: string; quantidade: number; valor: number }[]
+  formasPagamento: { forma: string; quantidade: number; valor: number }[]
+  porOperador: { operador: string; quantidade: number; valor: number }[]
+  pagamentosCombinados?: { combinacao: string; quantidade: number }[]
+}
+
+interface RelatorioEstoqueCritico {
+  resumo: {
+    totalProdutos: number
+    abaixoMinimo: number
+    estoqueZerado: number
+    produtosParados: number
+    valorParado: number
+  }
+  abaixoMinimo: any[]
+  estoqueZerado: any[]
+  produtosParados: any[]
+}
+
+interface RelatorioSaudeFinanceira {
+  periodo: {
+    receitaBruta: number
+    descontos: number
+    receitaLiquida: number
+    cmv: number
+    lucroBruto: number
+    margemBruta: number
+    quantidadeVendas: number
+    ticketMedio: number
+  }
+  comparativo: {
+    receitaAnterior: number
+    crescimento: number
+    diferencaValor: number
+  } | null
+  fluxoCaixa: {
+    totalReceber: number
+    totalPagar: number
+    saldo: number
+  }
+  indicadores: {
+    margemBruta: number
+    percentualDesconto: number
+    cobertura: number
+  }
+}
+
+interface RelatorioFiscal {
+  nfce: {
+    emitidas: number
+    valorEmitido: number
+    canceladas: number
+    valorCancelado: number
+  }
+  nfe: {
+    emitidas: number
+    valorEmitido: number
+    canceladas: number
+    valorCancelado: number
+  }
+  impostos: {
+    totalVendas: number
+    totalImpostos: number
+    percentualMedio: number
+  }
+}
+
+// Interface para itens vendidos detalhado
+interface ItemVendido {
+  id: string
+  venda_numero: number
+  venda_data: string
+  cliente_nome: string
+  produto_codigo: string
+  produto_nome: string
+  quantidade: number
+  preco_unitario: number
+  desconto: number
+  total: number
+  unidade: string
+}
+
 export default function RelatoriosPage() {
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
@@ -97,7 +246,7 @@ export default function RelatoriosPage() {
   const [dataInicio, setDataInicio] = useState(primeiroDiaMes.toISOString().split('T')[0])
   const [dataFim, setDataFim] = useState(hoje.toISOString().split('T')[0])
 
-  // Dados dos relatórios
+  // Dados dos relatorios existentes
   const [vendas, setVendas] = useState<VendaRelatorio[]>([])
   const [produtos, setProdutos] = useState<ProdutoRelatorio[]>([])
   const [pagamentos, setPagamentos] = useState<PagamentoRelatorio[]>([])
@@ -125,6 +274,25 @@ export default function RelatoriosPage() {
     baixoEstoque: 0,
   })
 
+  // Dados dos novos relatorios
+  const [relatorioDescontos, setRelatorioDescontos] = useState<RelatorioDescontos | null>(null)
+  const [relatorioCrediario, setRelatorioCrediario] = useState<RelatorioCrediario | null>(null)
+  const [relatorioClientes, setRelatorioClientes] = useState<RelatorioClientes | null>(null)
+  const [relatorioOperacional, setRelatorioOperacional] = useState<RelatorioOperacional | null>(null)
+  const [relatorioEstoqueCritico, setRelatorioEstoqueCritico] = useState<RelatorioEstoqueCritico | null>(null)
+  const [relatorioSaude, setRelatorioSaude] = useState<RelatorioSaudeFinanceira | null>(null)
+  const [relatorioFiscal, setRelatorioFiscal] = useState<RelatorioFiscal | null>(null)
+
+  // Itens vendidos detalhado
+  const [itensVendidos, setItensVendidos] = useState<ItemVendido[]>([])
+  const [resumoItensVendidos, setResumoItensVendidos] = useState({
+    totalItens: 0,
+    totalQuantidade: 0,
+    totalValor: 0,
+    totalDesconto: 0,
+  })
+
+  // Funcoes dos relatorios existentes
   async function buscarRelatorioVendas() {
     setLoading(true)
     try {
@@ -166,9 +334,74 @@ export default function RelatoriosPage() {
         ticketMedio: quantidade > 0 ? total / quantidade : 0,
       })
 
-      toast.success('Relatório gerado!')
+      toast.success('Relatorio gerado!')
     } catch (error) {
-      toast.error('Erro ao gerar relatório')
+      toast.error('Erro ao gerar relatorio')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Buscar itens vendidos detalhado
+  async function buscarItensVendidos() {
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('venda_itens')
+        .select(`
+          id,
+          quantidade,
+          preco_unitario,
+          desconto,
+          total,
+          produtos (codigo, nome, unidade),
+          vendas!inner (
+            numero,
+            data_hora,
+            status,
+            clientes (nome)
+          )
+        `)
+        .eq('vendas.status', 'finalizada')
+        .gte('vendas.data_hora', `${dataInicio}T00:00:00`)
+        .lte('vendas.data_hora', `${dataFim}T23:59:59`)
+        .order('vendas(data_hora)', { ascending: false })
+
+      if (error) throw error
+
+      const itensFormatados: ItemVendido[] = (data || []).map((item: any) => ({
+        id: item.id,
+        venda_numero: item.vendas?.numero || 0,
+        venda_data: item.vendas?.data_hora || '',
+        cliente_nome: item.vendas?.clientes?.nome || 'Consumidor',
+        produto_codigo: item.produtos?.codigo || '-',
+        produto_nome: item.produtos?.nome || 'Produto removido',
+        quantidade: item.quantidade,
+        preco_unitario: item.preco_unitario,
+        desconto: item.desconto || 0,
+        total: item.total,
+        unidade: item.produtos?.unidade || 'UN',
+      }))
+
+      setItensVendidos(itensFormatados)
+
+      // Calcular resumo
+      const totalItens = itensFormatados.length
+      const totalQuantidade = itensFormatados.reduce((acc, i) => acc + i.quantidade, 0)
+      const totalValor = itensFormatados.reduce((acc, i) => acc + i.total, 0)
+      const totalDesconto = itensFormatados.reduce((acc, i) => acc + i.desconto, 0)
+
+      setResumoItensVendidos({
+        totalItens,
+        totalQuantidade,
+        totalValor,
+        totalDesconto,
+      })
+
+      toast.success(`${totalItens} itens encontrados!`)
+    } catch (error) {
+      console.error('Erro ao buscar itens vendidos:', error)
+      toast.error('Erro ao gerar relatorio')
     } finally {
       setLoading(false)
     }
@@ -199,9 +432,9 @@ export default function RelatoriosPage() {
         baixoEstoque,
       })
 
-      toast.success('Relatório gerado!')
+      toast.success('Relatorio gerado!')
     } catch (error) {
-      toast.error('Erro ao gerar relatório')
+      toast.error('Erro ao gerar relatorio')
     } finally {
       setLoading(false)
     }
@@ -252,9 +485,9 @@ export default function RelatoriosPage() {
       )
 
       setProdutos(produtosOrdenados)
-      toast.success('Relatório gerado!')
+      toast.success('Relatorio gerado!')
     } catch (error) {
-      toast.error('Erro ao gerar relatório')
+      toast.error('Erro ao gerar relatorio')
     } finally {
       setLoading(false)
     }
@@ -276,7 +509,6 @@ export default function RelatoriosPage() {
 
       if (error) throw error
 
-      // Agrupar por forma de pagamento
       const agrupado: { [key: string]: PagamentoRelatorio } = {}
       data?.forEach((pag: any) => {
         const forma = pag.forma_pagamento
@@ -294,9 +526,9 @@ export default function RelatoriosPage() {
       const pagamentosOrdenados = Object.values(agrupado).sort((a, b) => b.total - a.total)
       setPagamentos(pagamentosOrdenados)
 
-      toast.success('Relatório gerado!')
+      toast.success('Relatorio gerado!')
     } catch (error) {
-      toast.error('Erro ao gerar relatório')
+      toast.error('Erro ao gerar relatorio')
     } finally {
       setLoading(false)
     }
@@ -305,7 +537,6 @@ export default function RelatoriosPage() {
   async function buscarResumoFinanceiro() {
     setLoading(true)
     try {
-      // Buscar vendas com itens
       const { data: vendas, error: vendasError } = await supabase
         .from('vendas')
         .select(`
@@ -348,9 +579,9 @@ export default function RelatoriosPage() {
         quantidade_vendas: quantidadeVendas,
       })
 
-      toast.success('Relatório gerado!')
+      toast.success('Relatorio gerado!')
     } catch (error) {
-      toast.error('Erro ao gerar relatório')
+      toast.error('Erro ao gerar relatorio')
     } finally {
       setLoading(false)
     }
@@ -372,7 +603,6 @@ export default function RelatoriosPage() {
 
       if (error) throw error
 
-      // Agrupar por produto
       const agrupado: { [key: string]: { id: string; codigo: string; nome: string; quantidade: number; valor: number } } = {}
       itensVendidos?.forEach((item: any) => {
         if (item.produtos) {
@@ -391,13 +621,9 @@ export default function RelatoriosPage() {
         }
       })
 
-      // Ordenar por valor (decrescente)
       const produtosOrdenados = Object.values(agrupado).sort((a, b) => b.valor - a.valor)
-
-      // Calcular total faturamento
       const totalFaturamento = produtosOrdenados.reduce((acc, p) => acc + p.valor, 0)
 
-      // Calcular percentuais e classificar
       let acumulado = 0
       const produtosABC: ProdutoCurvaABC[] = produtosOrdenados.map((p) => {
         const percentual = totalFaturamento > 0 ? (p.valor / totalFaturamento) * 100 : 0
@@ -424,7 +650,6 @@ export default function RelatoriosPage() {
 
       setCurvaABC(produtosABC)
 
-      // Calcular resumo
       const classeA = produtosABC.filter(p => p.classe === 'A')
       const classeB = produtosABC.filter(p => p.classe === 'B')
       const classeC = produtosABC.filter(p => p.classe === 'C')
@@ -447,13 +672,62 @@ export default function RelatoriosPage() {
     }
   }
 
+  // Funcoes dos novos relatorios "fofoqueira"
+  async function buscarRelatorioFofoqueira(tipo: string) {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        tipo,
+        dataInicio,
+        dataFim,
+      })
+
+      const response = await fetch(`/api/relatorios/fofoqueira?${params}`)
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Erro ao buscar relatorio')
+      }
+
+      const data = await response.json()
+
+      switch (tipo) {
+        case 'descontos':
+          setRelatorioDescontos(data)
+          break
+        case 'crediario':
+          setRelatorioCrediario(data)
+          break
+        case 'clientes':
+          setRelatorioClientes(data)
+          break
+        case 'operacional':
+          setRelatorioOperacional(data)
+          break
+        case 'estoque-critico':
+          setRelatorioEstoqueCritico(data)
+          break
+        case 'saude-financeira':
+          setRelatorioSaude(data)
+          break
+        case 'fiscal':
+          setRelatorioFiscal(data)
+          break
+      }
+
+      toast.success('Relatorio gerado!')
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao gerar relatorio')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   function exportarExcel(dados: any[], nomeArquivo: string) {
     if (dados.length === 0) {
-      toast.error('Não há dados para exportar')
+      toast.error('Nao ha dados para exportar')
       return
     }
 
-    // Criar CSV
     const headers = Object.keys(dados[0])
     const csvContent = [
       headers.join(';'),
@@ -471,7 +745,6 @@ export default function RelatoriosPage() {
       )
     ].join('\n')
 
-    // Adicionar BOM para Excel reconhecer UTF-8
     const BOM = '\uFEFF'
     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -504,10 +777,10 @@ export default function RelatoriosPage() {
   function formatFormaPagamento(forma: string) {
     const nomes: Record<string, string> = {
       dinheiro: 'Dinheiro',
-      cartao_credito: 'Cartão Crédito',
-      cartao_debito: 'Cartão Débito',
+      cartao_credito: 'Cartao Credito',
+      cartao_debito: 'Cartao Debito',
       pix: 'PIX',
-      crediario: 'Crediário',
+      crediario: 'Crediario',
     }
     return nomes[forma] || forma
   }
@@ -529,12 +802,42 @@ export default function RelatoriosPage() {
 
   const totalPagamentos = pagamentos.reduce((acc, p) => acc + p.total, 0)
 
+  // Componente de filtro de datas reutilizavel
+  const FiltroData = ({ onBuscar }: { onBuscar: () => void }) => (
+    <div className="flex flex-wrap gap-4 items-end">
+      <div className="space-y-2">
+        <Label>Data Inicio</Label>
+        <Input
+          type="date"
+          value={dataInicio}
+          onChange={(e) => setDataInicio(e.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Data Fim</Label>
+        <Input
+          type="date"
+          value={dataFim}
+          onChange={(e) => setDataFim(e.target.value)}
+        />
+      </div>
+      <Button onClick={onBuscar} disabled={loading}>
+        {loading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Search className="mr-2 h-4 w-4" />
+        )}
+        Gerar Relatorio
+      </Button>
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Relatórios</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Relatorios</h1>
         <p className="text-muted-foreground">
-          Análises e relatórios do seu negócio
+          A "fofoqueira" que sabe tudo sobre seu negocio
         </p>
       </div>
 
@@ -544,9 +847,29 @@ export default function RelatoriosPage() {
             <ShoppingCart className="mr-2 h-4 w-4" />
             Vendas
           </TabsTrigger>
+          <TabsTrigger value="itens-vendidos">
+            <Package className="mr-2 h-4 w-4" />
+            Itens Vendidos
+          </TabsTrigger>
+          <TabsTrigger value="descontos">
+            <Percent className="mr-2 h-4 w-4" />
+            Descontos
+          </TabsTrigger>
           <TabsTrigger value="pagamentos">
             <CreditCard className="mr-2 h-4 w-4" />
             Pagamentos
+          </TabsTrigger>
+          <TabsTrigger value="crediario">
+            <HandCoins className="mr-2 h-4 w-4" />
+            Crediario
+          </TabsTrigger>
+          <TabsTrigger value="clientes">
+            <Users className="mr-2 h-4 w-4" />
+            Clientes
+          </TabsTrigger>
+          <TabsTrigger value="operacional">
+            <Activity className="mr-2 h-4 w-4" />
+            Operacional
           </TabsTrigger>
           <TabsTrigger value="mais-vendidos">
             <TrendingUp className="mr-2 h-4 w-4" />
@@ -556,9 +879,21 @@ export default function RelatoriosPage() {
             <BarChart3 className="mr-2 h-4 w-4" />
             Curva ABC
           </TabsTrigger>
+          <TabsTrigger value="estoque-critico">
+            <AlertTriangle className="mr-2 h-4 w-4" />
+            Estoque Critico
+          </TabsTrigger>
           <TabsTrigger value="produtos">
             <Package className="mr-2 h-4 w-4" />
             Estoque
+          </TabsTrigger>
+          <TabsTrigger value="saude">
+            <Heart className="mr-2 h-4 w-4" />
+            Saude Financeira
+          </TabsTrigger>
+          <TabsTrigger value="fiscal">
+            <FileText className="mr-2 h-4 w-4" />
+            Fiscal
           </TabsTrigger>
           <TabsTrigger value="financeiro">
             <DollarSign className="mr-2 h-4 w-4" />
@@ -566,43 +901,18 @@ export default function RelatoriosPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Relatório de Vendas */}
+        {/* ==================== VENDAS ==================== */}
         <TabsContent value="vendas" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Relatório de Vendas</CardTitle>
+              <CardTitle>Relatorio de Vendas</CardTitle>
               <CardDescription>
-                Visualize todas as vendas realizadas no período
+                Visualize todas as vendas realizadas no periodo
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-4 items-end">
-                <div className="space-y-2">
-                  <Label htmlFor="dataInicio">Data Início</Label>
-                  <Input
-                    id="dataInicio"
-                    type="date"
-                    value={dataInicio}
-                    onChange={(e) => setDataInicio(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dataFim">Data Fim</Label>
-                  <Input
-                    id="dataFim"
-                    type="date"
-                    value={dataFim}
-                    onChange={(e) => setDataFim(e.target.value)}
-                  />
-                </div>
-                <Button onClick={buscarRelatorioVendas} disabled={loading}>
-                  {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="mr-2 h-4 w-4" />
-                  )}
-                  Gerar Relatório
-                </Button>
+                <FiltroData onBuscar={buscarRelatorioVendas} />
                 {vendas.length > 0 && (
                   <Button
                     variant="outline"
@@ -652,7 +962,7 @@ export default function RelatoriosPage() {
                       <div className="flex items-center gap-4">
                         <BarChart3 className="h-8 w-8 text-purple-500" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Ticket Médio</p>
+                          <p className="text-sm text-muted-foreground">Ticket Medio</p>
                           <p className="text-2xl font-bold">{formatCurrency(resumoVendas.ticketMedio)}</p>
                         </div>
                       </div>
@@ -665,7 +975,7 @@ export default function RelatoriosPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Número</TableHead>
+                      <TableHead>Numero</TableHead>
                       <TableHead>Data/Hora</TableHead>
                       <TableHead>Cliente</TableHead>
                       <TableHead>Vendedor</TableHead>
@@ -691,42 +1001,315 @@ export default function RelatoriosPage() {
           </Card>
         </TabsContent>
 
-        {/* Relatório de Pagamentos */}
+        {/* ==================== ITENS VENDIDOS ==================== */}
+        <TabsContent value="itens-vendidos" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Itens Vendidos no Periodo
+              </CardTitle>
+              <CardDescription>
+                Lista detalhada de todos os produtos e servicos vendidos
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-4 items-end">
+                <FiltroData onBuscar={buscarItensVendidos} />
+                {itensVendidos.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => exportarExcel(
+                      itensVendidos.map(i => ({
+                        'Venda #': i.venda_numero,
+                        'Data/Hora': formatDateTime(i.venda_data),
+                        'Cliente': i.cliente_nome,
+                        'Codigo': i.produto_codigo,
+                        'Produto': i.produto_nome,
+                        'Qtd': i.quantidade,
+                        'Unidade': i.unidade,
+                        'Preco Unit.': i.preco_unitario,
+                        'Desconto': i.desconto,
+                        'Total': i.total,
+                      })),
+                      'itens_vendidos'
+                    )}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Exportar Excel
+                  </Button>
+                )}
+              </div>
+
+              {resumoItensVendidos.totalItens > 0 && (
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-4">
+                        <Package className="h-8 w-8 text-blue-500" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total de Itens</p>
+                          <p className="text-2xl font-bold">{resumoItensVendidos.totalItens}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-4">
+                        <TrendingUp className="h-8 w-8 text-green-500" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Quantidade Total</p>
+                          <p className="text-2xl font-bold">{resumoItensVendidos.totalQuantidade.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-4">
+                        <DollarSign className="h-8 w-8 text-emerald-500" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Valor Total</p>
+                          <p className="text-2xl font-bold">{formatCurrency(resumoItensVendidos.totalValor)}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-4">
+                        <Percent className="h-8 w-8 text-orange-500" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total Descontos</p>
+                          <p className="text-2xl font-bold">{formatCurrency(resumoItensVendidos.totalDesconto)}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {itensVendidos.length > 0 ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Venda</TableHead>
+                        <TableHead>Data/Hora</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Produto</TableHead>
+                        <TableHead className="text-right">Qtd</TableHead>
+                        <TableHead className="text-right">Preco Unit.</TableHead>
+                        <TableHead className="text-right">Desconto</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {itensVendidos.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">#{item.venda_numero}</TableCell>
+                          <TableCell>{formatDateTime(item.venda_data)}</TableCell>
+                          <TableCell>{item.cliente_nome}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{item.produto_nome}</p>
+                              <p className="text-xs text-muted-foreground">{item.produto_codigo}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">{item.quantidade} {item.unidade}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(item.preco_unitario)}</TableCell>
+                          <TableCell className="text-right text-orange-600">
+                            {item.desconto > 0 ? `-${formatCurrency(item.desconto)}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(item.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Selecione o periodo e clique em "Gerar Relatorio" para ver os itens vendidos</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================== DESCONTOS ==================== */}
+        <TabsContent value="descontos" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Percent className="h-5 w-5" />
+                Relatorio de Descontos
+              </CardTitle>
+              <CardDescription>
+                Analise completa dos descontos concedidos
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('descontos')} />
+
+              {relatorioDescontos && (
+                <>
+                  {/* Resumo */}
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card className="bg-red-50 dark:bg-red-900/20 border-red-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-red-600">Total em Descontos</p>
+                          <p className="text-2xl font-bold text-red-700">
+                            {formatCurrency(relatorioDescontos.resumo.totalDesconto)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Desconto no Total</p>
+                          <p className="text-2xl font-bold">
+                            {formatCurrency(relatorioDescontos.resumo.totalDescontoVendas)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {relatorioDescontos.resumo.quantidadeVendas} vendas
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Desconto por Item</p>
+                          <p className="text-2xl font-bold">
+                            {formatCurrency(relatorioDescontos.resumo.totalDescontoItens)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {relatorioDescontos.resumo.quantidadeItens} itens
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Total Ocorrencias</p>
+                          <p className="text-2xl font-bold">
+                            {relatorioDescontos.resumo.quantidadeVendas + relatorioDescontos.resumo.quantidadeItens}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Por Motivo */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Por Motivo</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {relatorioDescontos.porMotivo.length > 0 ? (
+                          <div className="space-y-3">
+                            {relatorioDescontos.porMotivo.map((m, i) => (
+                              <div key={i} className="flex justify-between items-center">
+                                <div>
+                                  <p className="font-medium">{m.motivo}</p>
+                                  <p className="text-xs text-muted-foreground">{m.quantidade} vezes</p>
+                                </div>
+                                <p className="font-bold text-red-600">-{formatCurrency(m.valor)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-center py-4">Nenhum desconto no periodo</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Por Operador</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {relatorioDescontos.porOperador.length > 0 ? (
+                          <div className="space-y-3">
+                            {relatorioDescontos.porOperador.map((o, i) => (
+                              <div key={i} className="flex justify-between items-center">
+                                <div>
+                                  <p className="font-medium">{o.operador}</p>
+                                  <p className="text-xs text-muted-foreground">{o.quantidade} descontos</p>
+                                </div>
+                                <p className="font-bold text-red-600">-{formatCurrency(o.valor)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-center py-4">Nenhum desconto no periodo</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Produtos com mais desconto */}
+                  {relatorioDescontos.porProduto.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Produtos que Mais Recebem Desconto</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Codigo</TableHead>
+                              <TableHead>Produto</TableHead>
+                              <TableHead className="text-right">Vezes</TableHead>
+                              <TableHead className="text-right">Total Desconto</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {relatorioDescontos.porProduto.map((p, i) => (
+                              <TableRow key={i}>
+                                <TableCell className="font-mono">{p.codigo}</TableCell>
+                                <TableCell>{p.nome}</TableCell>
+                                <TableCell className="text-right">{p.quantidade}</TableCell>
+                                <TableCell className="text-right text-red-600 font-medium">
+                                  -{formatCurrency(p.valor)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+
+              {!relatorioDescontos && !loading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Percent className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Clique em "Gerar Relatorio" para ver os descontos</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================== PAGAMENTOS ==================== */}
         <TabsContent value="pagamentos" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Vendas por Forma de Pagamento</CardTitle>
               <CardDescription>
-                Análise das vendas por tipo de pagamento
+                Analise das vendas por tipo de pagamento
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-4 items-end">
-                <div className="space-y-2">
-                  <Label>Data Início</Label>
-                  <Input
-                    type="date"
-                    value={dataInicio}
-                    onChange={(e) => setDataInicio(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Data Fim</Label>
-                  <Input
-                    type="date"
-                    value={dataFim}
-                    onChange={(e) => setDataFim(e.target.value)}
-                  />
-                </div>
-                <Button onClick={buscarRelatorioPagamentos} disabled={loading}>
-                  {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="mr-2 h-4 w-4" />
-                  )}
-                  Gerar Relatório
-                </Button>
-              </div>
+              <FiltroData onBuscar={buscarRelatorioPagamentos} />
 
               {pagamentos.length > 0 && (
                 <>
@@ -742,7 +1325,7 @@ export default function RelatoriosPage() {
                               </p>
                               <p className="text-xl font-bold">{formatCurrency(pag.total)}</p>
                               <p className="text-xs text-muted-foreground">
-                                {pag.quantidade} transação(ões)
+                                {pag.quantidade} transacao(oes)
                               </p>
                             </div>
                           </div>
@@ -753,7 +1336,7 @@ export default function RelatoriosPage() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Distribuição</CardTitle>
+                      <CardTitle className="text-base">Distribuicao</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {pagamentos.map((pag) => {
@@ -783,41 +1366,468 @@ export default function RelatoriosPage() {
           </Card>
         </TabsContent>
 
-        {/* Mais Vendidos */}
+        {/* ==================== CREDIARIO ==================== */}
+        <TabsContent value="crediario" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <HandCoins className="h-5 w-5" />
+                Relatorio de Crediario / Fiado
+              </CardTitle>
+              <CardDescription>
+                Acompanhe os creditos concedidos e inadimplencia
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('crediario')} />
+
+              {relatorioCrediario && (
+                <>
+                  {/* Resumo */}
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Total Crediario</p>
+                          <p className="text-2xl font-bold">
+                            {formatCurrency(relatorioCrediario.resumo.totalCrediario)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-yellow-600">Em Aberto</p>
+                          <p className="text-2xl font-bold text-yellow-700">
+                            {formatCurrency(relatorioCrediario.resumo.totalEmAberto)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {relatorioCrediario.resumo.quantidadeParcelasAbertas} parcelas
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-red-50 dark:bg-red-900/20 border-red-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-red-600">Atrasado</p>
+                          <p className="text-2xl font-bold text-red-700">
+                            {formatCurrency(relatorioCrediario.resumo.totalAtrasado)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {relatorioCrediario.resumo.quantidadeParcelasAtrasadas} parcelas
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-green-50 dark:bg-green-900/20 border-green-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-green-600">Taxa Recuperacao</p>
+                          <p className="text-2xl font-bold text-green-700">
+                            {relatorioCrediario.resumo.taxaRecuperacao.toFixed(1)}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatCurrency(relatorioCrediario.resumo.totalRecebido)} recebido
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Clientes Devedores */}
+                  {relatorioCrediario.clientesDevedores.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Clientes com Debito em Aberto</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Cliente</TableHead>
+                              <TableHead>Telefone</TableHead>
+                              <TableHead className="text-right">Parcelas</TableHead>
+                              <TableHead className="text-right">Em Aberto</TableHead>
+                              <TableHead className="text-right">Atrasado</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {relatorioCrediario.clientesDevedores.map((c, i) => (
+                              <TableRow key={i}>
+                                <TableCell className="font-medium">{c.cliente}</TableCell>
+                                <TableCell>{c.telefone || '-'}</TableCell>
+                                <TableCell className="text-right">{c.parcelas}</TableCell>
+                                <TableCell className="text-right text-yellow-600">
+                                  {formatCurrency(c.totalAberto)}
+                                </TableCell>
+                                <TableCell className="text-right text-red-600 font-medium">
+                                  {c.totalAtrasado > 0 ? formatCurrency(c.totalAtrasado) : '-'}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+
+              {!relatorioCrediario && !loading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <HandCoins className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Clique em "Gerar Relatorio" para ver o crediario</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================== CLIENTES ==================== */}
+        <TabsContent value="clientes" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Relatorio de Clientes
+              </CardTitle>
+              <CardDescription>
+                Conheca seus clientes e identifique oportunidades
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('clientes')} />
+
+              {relatorioClientes && (
+                <>
+                  {/* Resumo */}
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Total Clientes</p>
+                          <p className="text-2xl font-bold">{relatorioClientes.resumo.totalClientes}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-green-50 dark:bg-green-900/20 border-green-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-green-600">Clientes Novos</p>
+                          <p className="text-2xl font-bold text-green-700">
+                            {relatorioClientes.resumo.clientesNovos}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Vendas Identificadas</p>
+                          <p className="text-2xl font-bold">
+                            {relatorioClientes.resumo.percentualIdentificado.toFixed(1)}%
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {relatorioClientes.resumo.vendasCliente} de {relatorioClientes.resumo.vendasCliente + relatorioClientes.resumo.vendasConsumidor}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Total Vendido</p>
+                          <p className="text-2xl font-bold">
+                            {formatCurrency(relatorioClientes.resumo.totalVendas)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {/* Melhores Clientes */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-green-500" />
+                          Melhores Clientes (Por Valor)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {relatorioClientes.melhoresClientes.slice(0, 10).map((c, i) => (
+                            <div key={i} className="flex justify-between items-center">
+                              <div>
+                                <p className="font-medium">{c.nome}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {c.quantidadeCompras} compras | Ticket: {formatCurrency(c.ticketMedio)}
+                                </p>
+                              </div>
+                              <p className="font-bold text-green-600">{formatCurrency(c.totalCompras)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Clientes que Sumiram */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <UserX className="h-4 w-4 text-red-500" />
+                          Clientes que Sumiram (+30 dias)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {relatorioClientes.clientesSumiram.length > 0 ? (
+                          <div className="space-y-3">
+                            {relatorioClientes.clientesSumiram.slice(0, 10).map((c, i) => (
+                              <div key={i} className="flex justify-between items-center">
+                                <div>
+                                  <p className="font-medium">{c.nome}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Ultima compra: {formatCurrency(c.totalCompras)}
+                                  </p>
+                                </div>
+                                <Badge variant="destructive">
+                                  {c.diasSemCompra} dias
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-center py-4">
+                            Todos os clientes estao ativos!
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              )}
+
+              {!relatorioClientes && !loading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Clique em "Gerar Relatorio" para conhecer seus clientes</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================== OPERACIONAL ==================== */}
+        <TabsContent value="operacional" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Relatorio Operacional
+              </CardTitle>
+              <CardDescription>
+                Analise o dia-a-dia da operacao
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('operacional')} />
+
+              {relatorioOperacional && (
+                <>
+                  {/* Resumo */}
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card className="bg-green-50 dark:bg-green-900/20 border-green-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-green-600">Total Vendido</p>
+                          <p className="text-2xl font-bold text-green-700">
+                            {formatCurrency(relatorioOperacional.resumo.valorTotal)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {relatorioOperacional.resumo.totalVendas} vendas
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-red-50 dark:bg-red-900/20 border-red-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-red-600">Cancelamentos</p>
+                          <p className="text-2xl font-bold text-red-700">
+                            {relatorioOperacional.resumo.vendasCanceladas}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatCurrency(relatorioOperacional.resumo.valorCancelado)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Taxa Cancelamento</p>
+                          <p className="text-2xl font-bold">
+                            {relatorioOperacional.resumo.taxaCancelamento.toFixed(1)}%
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Ticket Medio</p>
+                          <p className="text-2xl font-bold">
+                            {formatCurrency(
+                              relatorioOperacional.resumo.totalVendas > 0
+                                ? relatorioOperacional.resumo.valorTotal / relatorioOperacional.resumo.totalVendas
+                                : 0
+                            )}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Pagamentos Combinados */}
+                  {relatorioOperacional.resumo.vendasPagamentoCombinado !== undefined &&
+                   relatorioOperacional.resumo.vendasPagamentoCombinado > 0 && (
+                    <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200">
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Layers className="h-4 w-4 text-purple-600" />
+                          Pagamentos Combinados
+                        </CardTitle>
+                        <CardDescription>
+                          Vendas com multiplas formas de pagamento
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="text-center p-4 bg-white dark:bg-gray-900 rounded-lg">
+                            <p className="text-sm text-muted-foreground">Vendas Combinadas</p>
+                            <p className="text-3xl font-bold text-purple-600">
+                              {relatorioOperacional.resumo.vendasPagamentoCombinado}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {relatorioOperacional.resumo.percentualCombinado?.toFixed(1)}% do total
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-muted-foreground">Combinacoes mais usadas:</p>
+                            {relatorioOperacional.pagamentosCombinados?.slice(0, 5).map((pc, i) => (
+                              <div key={i} className="flex justify-between items-center text-sm">
+                                <span className="truncate max-w-[180px]">{pc.combinacao}</span>
+                                <Badge variant="secondary">{pc.quantidade}</Badge>
+                              </div>
+                            ))}
+                            {(!relatorioOperacional.pagamentosCombinados ||
+                              relatorioOperacional.pagamentosCombinados.length === 0) && (
+                              <p className="text-xs text-muted-foreground italic">
+                                Detalhes nao disponiveis
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {/* Horarios de Pico */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Horarios de Pico
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {relatorioOperacional.horariosPico.map((h, i) => (
+                            <div key={i} className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <Badge variant={i === 0 ? 'default' : 'secondary'}>
+                                  {h.hora.toString().padStart(2, '0')}:00
+                                </Badge>
+                                <span className="text-sm">{h.quantidade} vendas</span>
+                              </div>
+                              <p className="font-medium">{formatCurrency(h.valor)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Dias da Semana */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Dias da Semana
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {relatorioOperacional.diasSemana.map((d, i) => (
+                            <div key={i} className="flex justify-between items-center">
+                              <div>
+                                <p className="font-medium">{d.dia}</p>
+                                <p className="text-xs text-muted-foreground">{d.quantidade} vendas</p>
+                              </div>
+                              <p className="font-medium">{formatCurrency(d.valor)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Por Operador */}
+                  {relatorioOperacional.porOperador.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Vendas por Operador</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-4 md:grid-cols-3">
+                          {relatorioOperacional.porOperador.map((o, i) => (
+                            <div key={i} className="p-4 bg-muted rounded-lg">
+                              <p className="font-medium">{o.operador}</p>
+                              <p className="text-2xl font-bold">{formatCurrency(o.valor)}</p>
+                              <p className="text-xs text-muted-foreground">{o.quantidade} vendas</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+
+              {!relatorioOperacional && !loading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Clique em "Gerar Relatorio" para ver o operacional</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================== MAIS VENDIDOS ==================== */}
         <TabsContent value="mais-vendidos" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Produtos Mais Vendidos</CardTitle>
               <CardDescription>
-                Ranking dos produtos mais vendidos no período
+                Ranking dos produtos mais vendidos no periodo
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-4 items-end">
-                <div className="space-y-2">
-                  <Label>Data Início</Label>
-                  <Input
-                    type="date"
-                    value={dataInicio}
-                    onChange={(e) => setDataInicio(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Data Fim</Label>
-                  <Input
-                    type="date"
-                    value={dataFim}
-                    onChange={(e) => setDataFim(e.target.value)}
-                  />
-                </div>
-                <Button onClick={buscarRelatorioMaisVendidos} disabled={loading}>
-                  {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="mr-2 h-4 w-4" />
-                  )}
-                  Gerar Relatório
-                </Button>
+                <FiltroData onBuscar={buscarRelatorioMaisVendidos} />
                 {produtos.length > 0 && (
                   <Button
                     variant="outline"
@@ -843,7 +1853,7 @@ export default function RelatoriosPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-16">Rank</TableHead>
-                      <TableHead>Código</TableHead>
+                      <TableHead>Codigo</TableHead>
                       <TableHead>Produto</TableHead>
                       <TableHead className="text-right">Qtd. Vendida</TableHead>
                       <TableHead className="text-right">Total Faturado</TableHead>
@@ -879,48 +1889,25 @@ export default function RelatoriosPage() {
               {produtos.length === 0 && !loading && (
                 <div className="text-center py-12 text-muted-foreground">
                   <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatório" para visualizar os produtos mais vendidos</p>
+                  <p>Clique em "Gerar Relatorio" para visualizar os produtos mais vendidos</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Curva ABC */}
+        {/* ==================== CURVA ABC ==================== */}
         <TabsContent value="curva-abc" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Curva ABC - Análise de Pareto</CardTitle>
+              <CardTitle>Curva ABC - Analise de Pareto</CardTitle>
               <CardDescription>
-                Classificação dos produtos por importância no faturamento (80-15-5)
+                Classificacao dos produtos por importancia no faturamento (80-15-5)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-4 items-end">
-                <div className="space-y-2">
-                  <Label>Data Início</Label>
-                  <Input
-                    type="date"
-                    value={dataInicio}
-                    onChange={(e) => setDataInicio(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Data Fim</Label>
-                  <Input
-                    type="date"
-                    value={dataFim}
-                    onChange={(e) => setDataFim(e.target.value)}
-                  />
-                </div>
-                <Button onClick={buscarCurvaABC} disabled={loading}>
-                  {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="mr-2 h-4 w-4" />
-                  )}
-                  Gerar Curva ABC
-                </Button>
+                <FiltroData onBuscar={buscarCurvaABC} />
                 {curvaABC.length > 0 && (
                   <Button
                     variant="outline"
@@ -1028,7 +2015,7 @@ export default function RelatoriosPage() {
                   {/* Barra Visual das Classes */}
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Distribuição do Faturamento</CardTitle>
+                      <CardTitle className="text-base">Distribuicao do Faturamento</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex h-8 rounded-lg overflow-hidden">
@@ -1065,7 +2052,7 @@ export default function RelatoriosPage() {
                       <TableRow>
                         <TableHead className="w-16">Rank</TableHead>
                         <TableHead className="w-16">Classe</TableHead>
-                        <TableHead>Código</TableHead>
+                        <TableHead>Codigo</TableHead>
                         <TableHead>Produto</TableHead>
                         <TableHead className="text-right">Qtd.</TableHead>
                         <TableHead className="text-right">Faturamento</TableHead>
@@ -1112,7 +2099,7 @@ export default function RelatoriosPage() {
                   <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Clique em "Gerar Curva ABC" para classificar os produtos</p>
                   <p className="text-sm mt-2">
-                    A análise ABC identifica quais produtos são mais importantes para seu faturamento
+                    A analise ABC identifica quais produtos sao mais importantes para seu faturamento
                   </p>
                 </div>
               )}
@@ -1120,13 +2107,178 @@ export default function RelatoriosPage() {
           </Card>
         </TabsContent>
 
-        {/* Relatório de Estoque */}
+        {/* ==================== ESTOQUE CRITICO ==================== */}
+        <TabsContent value="estoque-critico" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                Estoque Critico
+              </CardTitle>
+              <CardDescription>
+                Produtos que precisam de atencao urgente
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button onClick={() => buscarRelatorioFofoqueira('estoque-critico')} disabled={loading}>
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="mr-2 h-4 w-4" />
+                )}
+                Verificar Estoque
+              </Button>
+
+              {relatorioEstoqueCritico && (
+                <>
+                  {/* Resumo */}
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Total Produtos</p>
+                          <p className="text-2xl font-bold">{relatorioEstoqueCritico.resumo.totalProdutos}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-yellow-600">Abaixo do Minimo</p>
+                          <p className="text-2xl font-bold text-yellow-700">
+                            {relatorioEstoqueCritico.resumo.abaixoMinimo}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-red-50 dark:bg-red-900/20 border-red-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-red-600">Estoque Zerado</p>
+                          <p className="text-2xl font-bold text-red-700">
+                            {relatorioEstoqueCritico.resumo.estoqueZerado}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-orange-50 dark:bg-orange-900/20 border-orange-200">
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-orange-600">Produtos Parados</p>
+                          <p className="text-2xl font-bold text-orange-700">
+                            {relatorioEstoqueCritico.resumo.produtosParados}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatCurrency(relatorioEstoqueCritico.resumo.valorParado)} parado
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {/* Estoque Zerado */}
+                    {relatorioEstoqueCritico.estoqueZerado.length > 0 && (
+                      <Card className="border-red-200">
+                        <CardHeader>
+                          <CardTitle className="text-base text-red-600">Estoque Zerado</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {relatorioEstoqueCritico.estoqueZerado.map((p: any, i: number) => (
+                              <div key={i} className="flex justify-between items-center text-sm p-2 bg-red-50 dark:bg-red-900/20 rounded">
+                                <div>
+                                  <p className="font-mono text-xs text-muted-foreground">{p.codigo}</p>
+                                  <p className="font-medium">{p.nome}</p>
+                                </div>
+                                <Badge variant="destructive">0 {p.unidade}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Abaixo do Minimo */}
+                    {relatorioEstoqueCritico.abaixoMinimo.length > 0 && (
+                      <Card className="border-yellow-200">
+                        <CardHeader>
+                          <CardTitle className="text-base text-yellow-600">Abaixo do Minimo</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {relatorioEstoqueCritico.abaixoMinimo.map((p: any, i: number) => (
+                              <div key={i} className="flex justify-between items-center text-sm p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded">
+                                <div>
+                                  <p className="font-mono text-xs text-muted-foreground">{p.codigo}</p>
+                                  <p className="font-medium">{p.nome}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold text-yellow-600">{p.estoque_atual} {p.unidade}</p>
+                                  <p className="text-xs text-muted-foreground">Min: {p.estoque_minimo}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+
+                  {/* Produtos Parados */}
+                  {relatorioEstoqueCritico.produtosParados.length > 0 && (
+                    <Card className="border-orange-200">
+                      <CardHeader>
+                        <CardTitle className="text-base text-orange-600">
+                          Produtos Parados (Sem venda ha 60+ dias)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Codigo</TableHead>
+                              <TableHead>Produto</TableHead>
+                              <TableHead className="text-right">Estoque</TableHead>
+                              <TableHead className="text-right">Valor Parado</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {relatorioEstoqueCritico.produtosParados.slice(0, 15).map((p: any, i: number) => (
+                              <TableRow key={i}>
+                                <TableCell className="font-mono">{p.codigo}</TableCell>
+                                <TableCell>{p.nome}</TableCell>
+                                <TableCell className="text-right">{p.estoque_atual} {p.unidade}</TableCell>
+                                <TableCell className="text-right text-orange-600 font-medium">
+                                  {formatCurrency(p.valorEstoque)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+
+              {!relatorioEstoqueCritico && !loading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Clique em "Verificar Estoque" para identificar problemas</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================== ESTOQUE ==================== */}
         <TabsContent value="produtos" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Relatório de Estoque</CardTitle>
+              <CardTitle>Relatorio de Estoque</CardTitle>
               <CardDescription>
-                Posição atual do estoque de produtos
+                Posicao atual do estoque de produtos
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1137,7 +2289,7 @@ export default function RelatoriosPage() {
                   ) : (
                     <Search className="mr-2 h-4 w-4" />
                   )}
-                  Gerar Relatório
+                  Gerar Relatorio
                 </Button>
                 {produtos.length > 0 && (
                   <Button
@@ -1216,11 +2368,11 @@ export default function RelatoriosPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Código</TableHead>
+                      <TableHead>Codigo</TableHead>
                       <TableHead>Produto</TableHead>
                       <TableHead className="text-right">Estoque</TableHead>
-                      <TableHead className="text-right">Mínimo</TableHead>
-                      <TableHead className="text-right">Preço Venda</TableHead>
+                      <TableHead className="text-right">Minimo</TableHead>
+                      <TableHead className="text-right">Preco Venda</TableHead>
                       <TableHead className="text-right">Valor Total</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
@@ -1261,42 +2413,328 @@ export default function RelatoriosPage() {
           </Card>
         </TabsContent>
 
-        {/* Resumo Financeiro */}
+        {/* ==================== SAUDE FINANCEIRA ==================== */}
+        <TabsContent value="saude" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-red-500" />
+                Saude Financeira
+              </CardTitle>
+              <CardDescription>
+                Visao completa da saude do seu negocio
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('saude-financeira')} />
+
+              {relatorioSaude && (
+                <>
+                  {/* DRE Simplificado */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">DRE Simplificado</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded">
+                          <span>Receita Bruta</span>
+                          <span className="font-bold text-green-600">
+                            {formatCurrency(relatorioSaude.periodo.receitaBruta)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-900/20 rounded">
+                          <span>(-) Descontos</span>
+                          <span className="font-bold text-red-600">
+                            -{formatCurrency(relatorioSaude.periodo.descontos)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                          <span>= Receita Liquida</span>
+                          <span className="font-bold text-blue-600">
+                            {formatCurrency(relatorioSaude.periodo.receitaLiquida)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded">
+                          <span>(-) CMV (Custo Mercadoria Vendida)</span>
+                          <span className="font-bold text-orange-600">
+                            -{formatCurrency(relatorioSaude.periodo.cmv)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-primary/10 rounded border-2 border-primary">
+                          <span className="font-bold">= Lucro Bruto</span>
+                          <span className="font-bold text-primary text-xl">
+                            {formatCurrency(relatorioSaude.periodo.lucroBruto)}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Indicadores */}
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Margem Bruta</p>
+                          <p className={`text-2xl font-bold ${
+                            relatorioSaude.indicadores.margemBruta >= 30 ? 'text-green-600' :
+                            relatorioSaude.indicadores.margemBruta >= 15 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {relatorioSaude.indicadores.margemBruta.toFixed(1)}%
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">% Descontos</p>
+                          <p className={`text-2xl font-bold ${
+                            relatorioSaude.indicadores.percentualDesconto <= 5 ? 'text-green-600' :
+                            relatorioSaude.indicadores.percentualDesconto <= 10 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {relatorioSaude.indicadores.percentualDesconto.toFixed(1)}%
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Ticket Medio</p>
+                          <p className="text-2xl font-bold">
+                            {formatCurrency(relatorioSaude.periodo.ticketMedio)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Total Vendas</p>
+                          <p className="text-2xl font-bold">
+                            {relatorioSaude.periodo.quantidadeVendas}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Comparativo com Periodo Anterior */}
+                  {relatorioSaude.comparativo && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Comparativo com Periodo Anterior</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-4 md:grid-cols-3">
+                          <div className="p-4 bg-muted rounded-lg text-center">
+                            <p className="text-sm text-muted-foreground">Periodo Anterior</p>
+                            <p className="text-xl font-bold">
+                              {formatCurrency(relatorioSaude.comparativo.receitaAnterior)}
+                            </p>
+                          </div>
+                          <div className="p-4 bg-muted rounded-lg text-center">
+                            <p className="text-sm text-muted-foreground">Periodo Atual</p>
+                            <p className="text-xl font-bold">
+                              {formatCurrency(relatorioSaude.periodo.receitaLiquida)}
+                            </p>
+                          </div>
+                          <div className={`p-4 rounded-lg text-center ${
+                            relatorioSaude.comparativo.crescimento >= 0
+                              ? 'bg-green-50 dark:bg-green-900/20'
+                              : 'bg-red-50 dark:bg-red-900/20'
+                          }`}>
+                            <p className="text-sm text-muted-foreground">Crescimento</p>
+                            <p className={`text-xl font-bold flex items-center justify-center gap-1 ${
+                              relatorioSaude.comparativo.crescimento >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {relatorioSaude.comparativo.crescimento >= 0 ? (
+                                <ArrowUpRight className="h-5 w-5" />
+                              ) : (
+                                <ArrowDownRight className="h-5 w-5" />
+                              )}
+                              {relatorioSaude.comparativo.crescimento.toFixed(1)}%
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatCurrency(Math.abs(relatorioSaude.comparativo.diferencaValor))}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Fluxo de Caixa */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Fluxo de Caixa Projetado</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                          <p className="text-sm text-green-600">A Receber</p>
+                          <p className="text-xl font-bold text-green-700">
+                            {formatCurrency(relatorioSaude.fluxoCaixa.totalReceber)}
+                          </p>
+                        </div>
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
+                          <p className="text-sm text-red-600">A Pagar</p>
+                          <p className="text-xl font-bold text-red-700">
+                            {formatCurrency(relatorioSaude.fluxoCaixa.totalPagar)}
+                          </p>
+                        </div>
+                        <div className={`p-4 rounded-lg text-center ${
+                          relatorioSaude.fluxoCaixa.saldo >= 0
+                            ? 'bg-blue-50 dark:bg-blue-900/20'
+                            : 'bg-orange-50 dark:bg-orange-900/20'
+                        }`}>
+                          <p className="text-sm text-muted-foreground">Saldo Projetado</p>
+                          <p className={`text-xl font-bold ${
+                            relatorioSaude.fluxoCaixa.saldo >= 0 ? 'text-blue-700' : 'text-orange-700'
+                          }`}>
+                            {formatCurrency(relatorioSaude.fluxoCaixa.saldo)}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              {!relatorioSaude && !loading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Clique em "Gerar Relatorio" para ver a saude financeira</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================== FISCAL ==================== */}
+        <TabsContent value="fiscal" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Relatorio Fiscal
+              </CardTitle>
+              <CardDescription>
+                Notas fiscais emitidas e impostos
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('fiscal')} />
+
+              {relatorioFiscal && (
+                <>
+                  {/* NFC-e e NF-e */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {/* NFC-e */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">NFC-e (Cupom Fiscal)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-3 grid-cols-2">
+                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded text-center">
+                            <p className="text-sm text-green-600">Emitidas</p>
+                            <p className="text-xl font-bold text-green-700">{relatorioFiscal.nfce.emitidas}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatCurrency(relatorioFiscal.nfce.valorEmitido)}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded text-center">
+                            <p className="text-sm text-red-600">Canceladas</p>
+                            <p className="text-xl font-bold text-red-700">{relatorioFiscal.nfce.canceladas}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatCurrency(relatorioFiscal.nfce.valorCancelado)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* NF-e */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">NF-e (Nota Fiscal)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-3 grid-cols-2">
+                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded text-center">
+                            <p className="text-sm text-green-600">Emitidas</p>
+                            <p className="text-xl font-bold text-green-700">{relatorioFiscal.nfe.emitidas}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatCurrency(relatorioFiscal.nfe.valorEmitido)}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded text-center">
+                            <p className="text-sm text-red-600">Canceladas</p>
+                            <p className="text-xl font-bold text-red-700">{relatorioFiscal.nfe.canceladas}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatCurrency(relatorioFiscal.nfe.valorCancelado)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Impostos (IBPT) */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Impostos Aproximados (IBPT)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <div className="p-4 bg-muted rounded-lg text-center">
+                          <p className="text-sm text-muted-foreground">Total Vendas</p>
+                          <p className="text-xl font-bold">
+                            {formatCurrency(relatorioFiscal.impostos.totalVendas)}
+                          </p>
+                        </div>
+                        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-center">
+                          <p className="text-sm text-yellow-600">Total Impostos</p>
+                          <p className="text-xl font-bold text-yellow-700">
+                            {formatCurrency(relatorioFiscal.impostos.totalImpostos)}
+                          </p>
+                        </div>
+                        <div className="p-4 bg-muted rounded-lg text-center">
+                          <p className="text-sm text-muted-foreground">Carga Tributaria Media</p>
+                          <p className="text-xl font-bold">
+                            {relatorioFiscal.impostos.percentualMedio.toFixed(1)}%
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              {!relatorioFiscal && !loading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Clique em "Gerar Relatorio" para ver o fiscal</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================== FINANCEIRO ==================== */}
         <TabsContent value="financeiro" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Resumo Financeiro</CardTitle>
               <CardDescription>
-                Análise de faturamento, custos e lucratividade
+                Analise de faturamento, custos e lucratividade
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-4 items-end">
-                <div className="space-y-2">
-                  <Label>Data Início</Label>
-                  <Input
-                    type="date"
-                    value={dataInicio}
-                    onChange={(e) => setDataInicio(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Data Fim</Label>
-                  <Input
-                    type="date"
-                    value={dataFim}
-                    onChange={(e) => setDataFim(e.target.value)}
-                  />
-                </div>
-                <Button onClick={buscarResumoFinanceiro} disabled={loading}>
-                  {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="mr-2 h-4 w-4" />
-                  )}
-                  Gerar Relatório
-                </Button>
-              </div>
+              <FiltroData onBuscar={buscarResumoFinanceiro} />
 
               {resumoFinanceiro && (
                 <>
@@ -1348,7 +2786,7 @@ export default function RelatoriosPage() {
                         <div className="flex items-center gap-4">
                           <BarChart3 className="h-10 w-10 text-purple-500" />
                           <div>
-                            <p className="text-sm text-muted-foreground">Ticket Médio</p>
+                            <p className="text-sm text-muted-foreground">Ticket Medio</p>
                             <p className="text-2xl font-bold">{formatCurrency(resumoFinanceiro.ticket_medio)}</p>
                           </div>
                         </div>
@@ -1375,7 +2813,7 @@ export default function RelatoriosPage() {
               {!resumoFinanceiro && !loading && (
                 <div className="text-center py-12 text-muted-foreground">
                   <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatório" para visualizar o resumo financeiro</p>
+                  <p>Clique em "Gerar Relatorio" para visualizar o resumo financeiro</p>
                 </div>
               )}
             </CardContent>

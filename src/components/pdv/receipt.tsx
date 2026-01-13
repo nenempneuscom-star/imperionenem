@@ -21,6 +21,9 @@ interface DadosRecibo {
     nome: string
     cnpj: string
     endereco?: string
+    cidade?: string
+    uf?: string
+    cep?: string
     telefone?: string
   }
   // Venda
@@ -49,6 +52,9 @@ interface DadosRecibo {
   cliente?: {
     nome?: string
     cpf?: string
+    telefone?: string
+    cidade?: string
+    veiculo?: string
   }
 }
 
@@ -370,14 +376,36 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
     cliente,
   } = dados
 
-  const maxChars = largura === '58mm' ? 32 : 48
+  const maxChars = largura === '58mm' ? 32 : 42
   const separador = '-'.repeat(maxChars)
-  const fontSize = largura === '58mm' ? '10px' : '12px'
-  const fontSizeSmall = largura === '58mm' ? '9px' : '10px'
-  const fontSizeLarge = largura === '58mm' ? '12px' : '14px'
+  const fontSize = largura === '58mm' ? '10px' : '11px'
+  const fontSizeSmall = largura === '58mm' ? '8px' : '9px'
+  const fontSizeLarge = largura === '58mm' ? '12px' : '13px'
 
   function truncate(text: string, max: number): string {
     return text.length > max ? text.substring(0, max - 1) + '.' : text
+  }
+
+  // Formata CEP
+  function formatCEP(cep: string): string {
+    const cleaned = cep.replace(/\D/g, '')
+    return cleaned.replace(/^(\d{5})(\d{3})$/, '$1-$2')
+  }
+
+  // Montar endereco completo
+  let enderecoCompleto = ''
+  if (empresa.endereco) {
+    enderecoCompleto = empresa.endereco
+  }
+  let cidadeUfCep = ''
+  if (empresa.cidade || empresa.uf || empresa.cep) {
+    const parts = []
+    if (empresa.cidade) parts.push(empresa.cidade)
+    if (empresa.uf) parts.push(empresa.uf)
+    cidadeUfCep = parts.join('-')
+    if (empresa.cep) {
+      cidadeUfCep += ` - ${formatCEP(empresa.cep)}`
+    }
   }
 
   const html = `
@@ -400,7 +428,7 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
         @media print {
           @page {
             size: ${largura} auto;
-            margin: 0;
+            margin: 2mm 4mm;
           }
           html, body {
             margin: 0 !important;
@@ -419,9 +447,9 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
           font-family: 'Courier New', Courier, monospace;
           font-size: ${fontSize};
           font-weight: 500;
-          line-height: 1.4;
+          line-height: 1.3;
           width: ${largura};
-          padding: 3mm;
+          padding: 2mm 4mm;
           margin: 0 auto;
           background: #ffffff;
           color: #000000;
@@ -433,13 +461,22 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
         .center { text-align: center; }
         .bold { font-weight: 700 !important; }
         .extra-bold { font-weight: 900 !important; }
-        .separator { margin: 3px 0; font-weight: 700; }
+        .separator { margin: 2px 0; font-weight: 700; letter-spacing: -1px; }
         .flex { display: flex; justify-content: space-between; }
         .small { font-size: ${fontSizeSmall}; }
         .large { font-size: ${fontSizeLarge}; font-weight: 700; }
-        .item { margin-bottom: 3px; }
-        .item-detail { padding-left: 15px; }
+        .item { margin-bottom: 2px; }
+        .item-detail { padding-left: 12px; }
         .break-all { word-break: break-all; }
+
+        /* Secao cliente */
+        .cliente-info {
+          margin: 4px 0;
+          font-size: ${fontSizeSmall};
+        }
+        .cliente-info div {
+          margin: 1px 0;
+        }
 
         /* QR Code placeholder */
         .qr-placeholder {
@@ -452,8 +489,8 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
 
         /* Tributos */
         .tributos {
-          margin-top: 6px;
-          padding: 4px;
+          margin-top: 4px;
+          padding: 3px;
           border: 1px solid #000000;
           font-size: ${fontSizeSmall};
         }
@@ -467,12 +504,13 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
       </style>
     </head>
     <body>
-      <!-- Header -->
+      <!-- Header da Empresa -->
       <div class="center">
         <div class="extra-bold large">${truncate(empresa.nome, maxChars)}</div>
+        ${enderecoCompleto ? `<div class="small">${truncate(enderecoCompleto, maxChars)}</div>` : ''}
+        ${cidadeUfCep ? `<div class="small">${truncate(cidadeUfCep, maxChars)}</div>` : ''}
         <div class="bold">CNPJ: ${formatCNPJ(empresa.cnpj)}</div>
-        ${empresa.endereco ? `<div class="small">${truncate(empresa.endereco, maxChars)}</div>` : ''}
-        ${empresa.telefone ? `<div>Tel: ${empresa.telefone}</div>` : ''}
+        ${empresa.telefone ? `<div>Fone: ${empresa.telefone}</div>` : ''}
       </div>
 
       <div class="separator bold">${separador}</div>
@@ -486,9 +524,18 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
         <span>Venda: ${numero || '---'}</span>
         <span>${formatDateTime(data)}</span>
       </div>
-      <div class="bold">Operador: ${truncate(operador, maxChars - 10)}</div>
-      ${cliente?.nome ? `<div class="bold">Cliente: ${truncate(cliente.nome, maxChars - 9)}</div>` : ''}
-      ${cliente?.cpf ? `<div>CPF: ${formatCPF(cliente.cpf)}</div>` : ''}
+      <div>Operador: ${truncate(operador, maxChars - 10)}</div>
+
+      ${cliente && (cliente.nome || cliente.cpf || cliente.telefone || cliente.cidade || cliente.veiculo) ? `
+        <div class="separator bold">${separador}</div>
+        <div class="cliente-info">
+          ${cliente.nome ? `<div><span class="bold">Cliente:</span> ${truncate(cliente.nome, maxChars - 9)}</div>` : ''}
+          ${cliente.cpf ? `<div><span class="bold">CPF/CNPJ:</span> ${cliente.cpf.length > 11 ? formatCNPJ(cliente.cpf) : formatCPF(cliente.cpf)}</div>` : ''}
+          ${cliente.telefone ? `<div><span class="bold">Fone:</span> ${cliente.telefone}</div>` : ''}
+          ${cliente.cidade ? `<div><span class="bold">Cidade:</span> ${cliente.cidade}</div>` : ''}
+          ${cliente.veiculo ? `<div><span class="bold">Veiculo:</span> ${cliente.veiculo}</div>` : ''}
+        </div>
+      ` : ''}
 
       <div class="separator bold">${separador}</div>
 
@@ -526,7 +573,7 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
           <span>-${formatCurrency(desconto)}</span>
         </div>
       ` : ''}
-      <div class="flex extra-bold large" style="margin-top: 4px;">
+      <div class="flex extra-bold large" style="margin-top: 3px;">
         <span>TOTAL:</span>
         <span>${formatCurrency(total)}</span>
       </div>
@@ -552,7 +599,7 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
         </div>
       `).join('')}
       ${valorRecebido && valorRecebido > 0 ? `
-        <div class="flex bold">
+        <div class="flex">
           <span>Valor Recebido:</span>
           <span>${formatCurrency(valorRecebido)}</span>
         </div>
@@ -569,8 +616,8 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
         <div class="center small">
           <div class="extra-bold">CHAVE DE ACESSO</div>
           <div class="break-all bold">${nfce.chave}</div>
-          ${nfce.protocolo ? `<div class="bold" style="margin-top: 4px;">Protocolo: ${nfce.protocolo}</div>` : ''}
-          <div style="margin-top: 4px;">Consulte em www.nfce.fazenda.gov.br</div>
+          ${nfce.protocolo ? `<div class="bold" style="margin-top: 3px;">Protocolo: ${nfce.protocolo}</div>` : ''}
+          <div style="margin-top: 3px;">Consulte em www.nfce.fazenda.gov.br</div>
         </div>
         <div class="qr-placeholder">[QR CODE]</div>
       ` : ''}
@@ -579,9 +626,9 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
 
       <!-- Rodape -->
       <div class="center">
-        <div class="extra-bold" style="margin-top: 4px;">OBRIGADO PELA PREFERENCIA!</div>
-        <div class="bold small" style="margin-top: 4px;">Volte sempre!</div>
-        <div class="bold" style="font-size: 9px; margin-top: 8px;">Imperio Sistemas</div>
+        <div class="extra-bold" style="margin-top: 3px;">OBRIGADO PELA PREFERENCIA!</div>
+        <div class="bold small" style="margin-top: 3px;">Volte sempre!</div>
+        <div class="bold" style="font-size: 8px; margin-top: 6px;">Imperio Sistemas</div>
       </div>
 
       <script>

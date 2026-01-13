@@ -50,10 +50,12 @@ import {
   Scan,
   Scale,
   Percent,
+  Layers,
 } from 'lucide-react'
 import { printReceipt, type DadosRecibo } from '@/components/pdv/receipt'
 import { PixQRCode } from '@/components/pdv/pix-qrcode'
 import { DiscountModal } from '@/components/pdv/discount-modal'
+import { PaymentCombinationModal } from '@/components/pdv/payment-combination-modal'
 
 interface Produto {
   id: string
@@ -129,7 +131,7 @@ export default function PDVPage() {
   const [fiscalConfigurado, setFiscalConfigurado] = useState(false)
   const [caixaAberto, setCaixaAberto] = useState<{ id: string; valor_abertura: number } | null>(null)
   const [loadingCaixa, setLoadingCaixa] = useState(true)
-  const [empresa, setEmpresa] = useState<{ nome: string; cnpj: string; endereco?: string; chavePix?: string; cidade?: string } | null>(null)
+  const [empresa, setEmpresa] = useState<{ nome: string; cnpj: string; endereco?: string; cidade?: string; uf?: string; cep?: string; telefone?: string; chavePix?: string } | null>(null)
   // Estados para crediário
   const [showClienteModal, setShowClienteModal] = useState(false)
   const [clienteSearch, setClienteSearch] = useState('')
@@ -144,6 +146,10 @@ export default function PDVPage() {
   const [pontosGanhos, setPontosGanhos] = useState<number | null>(null)
   const [showAjuda, setShowAjuda] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)
+  // Estados para pagamento combinado
+  const [showCombinedPaymentModal, setShowCombinedPaymentModal] = useState(false)
+  const [combinedPayments, setCombinedPayments] = useState<{ forma: string; valor: number }[] | null>(null)
+  const [combinedValorRecebido, setCombinedValorRecebido] = useState<number | undefined>(undefined)
   // Estados para desconto
   const [configDesconto, setConfigDesconto] = useState<ConfigDesconto | null>(null)
   const [showDescontoModal, setShowDescontoModal] = useState(false)
@@ -240,23 +246,26 @@ export default function PDVPage() {
 
         const { data: empresaData } = await supabase
           .from('empresas')
-          .select('razao_social, nome_fantasia, cnpj, endereco, config_fiscal')
+          .select('razao_social, nome_fantasia, cnpj, endereco, telefone, config_fiscal')
           .eq('id', usuario.empresa_id)
           .single()
 
         if (empresaData) {
           let enderecoFormatado: string | undefined
           let cidade: string | undefined
+          let uf: string | undefined
+          let cep: string | undefined
 
           if (empresaData.endereco && typeof empresaData.endereco === 'object') {
             const end = empresaData.endereco as Record<string, string>
             cidade = end.cidade
+            uf = end.uf
+            cep = end.cep
+            // Formato: Logradouro, Numero, Bairro
             enderecoFormatado = [
               end.logradouro,
               end.numero,
               end.bairro,
-              end.cidade,
-              end.uf,
             ].filter(Boolean).join(', ')
           }
 
@@ -271,8 +280,11 @@ export default function PDVPage() {
             nome: empresaData.nome_fantasia || empresaData.razao_social,
             cnpj: empresaData.cnpj,
             endereco: enderecoFormatado || undefined,
-            chavePix: chavePix || undefined,
             cidade: cidade || undefined,
+            uf: uf || undefined,
+            cep: cep || undefined,
+            telefone: empresaData.telefone || undefined,
+            chavePix: chavePix || undefined,
           })
         }
       } catch (error) {
@@ -818,7 +830,10 @@ export default function PDVPage() {
 
   // Finalizar venda (online ou offline)
   async function finalizarVenda() {
-    if (!selectedPayment) {
+    // Verificar se tem forma de pagamento (simples ou combinado)
+    const isCombinedPayment = combinedPayments && combinedPayments.length > 0
+
+    if (!selectedPayment && !isCombinedPayment) {
       toast.error('Selecione uma forma de pagamento')
       return
     }
@@ -828,8 +843,13 @@ export default function PDVPage() {
       return
     }
 
-    // Validação para crediário
-    if (selectedPayment === 'crediario') {
+    // Validação para crediário (simples ou combinado)
+    const hasCrediario = selectedPayment === 'crediario' || (isCombinedPayment && combinedPayments?.some(p => p.forma === 'crediario'))
+    const valorCrediario = isCombinedPayment
+      ? combinedPayments?.find(p => p.forma === 'crediario')?.valor || 0
+      : (selectedPayment === 'crediario' ? total : 0)
+
+    if (hasCrediario) {
       if (!clienteSelecionado) {
         toast.error('Selecione um cliente para venda no crediário')
         setShowClienteModal(true)
@@ -837,7 +857,7 @@ export default function PDVPage() {
       }
 
       const creditoDisponivel = clienteSelecionado.limite_credito - clienteSelecionado.saldo_devedor
-      if (creditoDisponivel < total) {
+      if (creditoDisponivel < valorCrediario) {
         toast.error(`Crédito insuficiente. Disponível: ${formatCurrency(creditoDisponivel)}`)
         return
       }
@@ -875,10 +895,18 @@ export default function PDVPage() {
         'crediario': '05', // Crédito loja
       }
 
-      const formaPagamento = selectedPayment === 'cartao_credito' ? 'cartao_credito' :
-                            selectedPayment === 'cartao_debito' ? 'cartao_debito' :
-                            selectedPayment === 'pix' ? 'pix' :
-                            selectedPayment === 'crediario' ? 'crediario' : 'dinheiro'
+      // Definir pagamentos (combinado ou simples)
+      let pagamentosFinais: { forma: string; valor: number }[]
+
+      if (isCombinedPayment && combinedPayments) {
+        pagamentosFinais = combinedPayments
+      } else {
+        const formaPagamento = selectedPayment === 'cartao_credito' ? 'cartao_credito' :
+                              selectedPayment === 'cartao_debito' ? 'cartao_debito' :
+                              selectedPayment === 'pix' ? 'pix' :
+                              selectedPayment === 'crediario' ? 'crediario' : 'dinheiro'
+        pagamentosFinais = [{ forma: formaPagamento, valor: total }]
+      }
 
       // Calcular desconto total (itens + geral)
       const descontoItensTotal = getDescontoItens()
@@ -898,10 +926,7 @@ export default function PDVPage() {
           desconto_motivo: item.descontoMotivo || null,
           total: (item.preco * item.quantidade) - (item.desconto || 0),
         })),
-        pagamentos: [{
-          forma: formaPagamento,
-          valor: total,
-        }],
+        pagamentos: pagamentosFinais,
         subtotal,
         desconto: descontoTotal,
         desconto_percentual: descontoGeral.percentual,
@@ -974,19 +999,22 @@ export default function PDVPage() {
 
           if (itensError) throw itensError
 
-          // Criar pagamento
+          // Criar pagamentos (um ou múltiplos)
+          const pagamentosParaInserir = pagamentosFinais.map(p => ({
+            venda_id: venda.id,
+            forma_pagamento: p.forma,
+            valor: p.valor,
+          }))
+
           const { error: pagamentoError } = await supabase
             .from('venda_pagamentos')
-            .insert({
-              venda_id: venda.id,
-              forma_pagamento: formaPagamento,
-              valor: total,
-            })
+            .insert(pagamentosParaInserir)
 
           if (pagamentoError) throw pagamentoError
 
-          // Registrar no crediário se for venda fiado
-          if (formaPagamento === 'crediario' && clienteSelecionado) {
+          // Registrar no crediário se tiver pagamento fiado
+          const pagamentoCrediario = pagamentosFinais.find(p => p.forma === 'crediario')
+          if (pagamentoCrediario && clienteSelecionado) {
             const { error: crediarioError } = await supabase
               .from('crediario')
               .insert({
@@ -994,9 +1022,9 @@ export default function PDVPage() {
                 cliente_id: clienteSelecionado.id,
                 venda_id: venda.id,
                 tipo: 'debito',
-                valor: total,
+                valor: pagamentoCrediario.valor,
                 saldo_anterior: clienteSelecionado.saldo_devedor,
-                saldo_posterior: clienteSelecionado.saldo_devedor + total,
+                saldo_posterior: clienteSelecionado.saldo_devedor + pagamentoCrediario.valor,
                 descricao: `Venda #${venda.numero} - PDV`,
               })
 
@@ -1095,10 +1123,10 @@ export default function PDVPage() {
                     total: item.preco * item.quantidade,
                     unidade: 'UN',
                   })),
-                  pagamentos: [{
-                    forma: formasPagamentoFiscal[formaPagamento] || '01',
-                    valor: total,
-                  }],
+                  pagamentos: pagamentosFinais.map(p => ({
+                    forma: formasPagamentoFiscal[p.forma] || '01',
+                    valor: p.valor,
+                  })),
                   cliente: cpfCliente ? {
                     cpf_cnpj: cpfCliente.replace(/\D/g, ''),
                   } : undefined,
@@ -1158,6 +1186,16 @@ export default function PDVPage() {
       }
 
       // Salvar dados da venda para impressão
+      // Calcular valor recebido e troco para pagamento combinado ou simples
+      const temDinheiroNoPagamento = pagamentosFinais.some(p => p.forma === 'dinheiro')
+      const valorDinheiroNoPagamento = pagamentosFinais.find(p => p.forma === 'dinheiro')?.valor || 0
+      const valorRecebidoFinal = isCombinedPayment
+        ? (temDinheiroNoPagamento ? combinedValorRecebido : undefined)
+        : (selectedPayment === 'dinheiro' ? parseFloat(valorRecebido || '0') : undefined)
+      const trocoFinal = valorRecebidoFinal && temDinheiroNoPagamento
+        ? Math.max(0, valorRecebidoFinal - valorDinheiroNoPagamento)
+        : undefined
+
       setVendaFinalizada({
         numero: vendaNumero,
         itens: items.map((item) => ({
@@ -1170,9 +1208,9 @@ export default function PDVPage() {
         subtotal,
         desconto: descontoTotal,
         total,
-        pagamentos: [{ forma: formaPagamento, valor: total }],
-        valorRecebido: selectedPayment === 'dinheiro' ? parseFloat(valorRecebido || '0') : undefined,
-        troco: selectedPayment === 'dinheiro' && troco > 0 ? troco : undefined,
+        pagamentos: pagamentosFinais,
+        valorRecebido: valorRecebidoFinal,
+        troco: trocoFinal && trocoFinal > 0 ? trocoFinal : undefined,
         operador: operadorNome,
         valorTributos: tributos.valorTributos,
         percentualTributos: tributos.percentualTributos,
@@ -1190,6 +1228,9 @@ export default function PDVPage() {
         setCpfCliente('')
         setVendaFinalizada(null)
         setClienteSelecionado(null)
+        // Reset pagamento combinado
+        setCombinedPayments(null)
+        setCombinedValorRecebido(undefined)
         // Reset fidelidade
         setClientePontos(null)
         setUsarPontos(false)
@@ -1218,6 +1259,22 @@ export default function PDVPage() {
       nome: 'EMPRESA',
       cnpj: '00000000000000',
       endereco: undefined,
+      cidade: undefined,
+      uf: undefined,
+      cep: undefined,
+      telefone: undefined,
+    }
+
+    // Montar dados do cliente (clienteSelecionado ou CPF avulso)
+    let dadosCliente: { nome?: string; cpf?: string; telefone?: string; cidade?: string } | undefined
+    if (clienteSelecionado) {
+      dadosCliente = {
+        nome: clienteSelecionado.nome,
+        cpf: clienteSelecionado.cpf_cnpj,
+        telefone: clienteSelecionado.telefone,
+      }
+    } else if (cpfCliente) {
+      dadosCliente = { cpf: cpfCliente }
     }
 
     const dadosRecibo: DadosRecibo = {
@@ -1225,6 +1282,10 @@ export default function PDVPage() {
         nome: empresaData.nome,
         cnpj: empresaData.cnpj,
         endereco: empresaData.endereco,
+        cidade: empresaData.cidade,
+        uf: empresaData.uf,
+        cep: empresaData.cep,
+        telefone: empresaData.telefone,
       },
       numero: vendaFinalizada.numero,
       data: new Date(),
@@ -1241,7 +1302,7 @@ export default function PDVPage() {
       nfce: nfceResult?.sucesso
         ? { chave: nfceResult.chave, protocolo: nfceResult.protocolo }
         : undefined,
-      cliente: cpfCliente ? { cpf: cpfCliente } : undefined,
+      cliente: dadosCliente,
     }
 
     printReceipt({ dados: dadosRecibo, largura: '80mm' })
@@ -1767,32 +1828,41 @@ export default function PDVPage() {
           {/* Formas de Pagamento */}
           <div className="p-3">
             <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Forma de Pagamento</p>
-            <div className="grid grid-cols-5 gap-1">
+            <div className="grid grid-cols-6 gap-1">
               {[
                 { id: 'dinheiro', label: 'Dinheiro', icon: DollarSign, key: 'F6', color: 'green' },
                 { id: 'cartao_credito', label: 'Crédito', icon: CreditCard, key: 'F7', color: 'blue' },
                 { id: 'cartao_debito', label: 'Débito', icon: CreditCard, key: 'F8', color: 'indigo' },
                 { id: 'pix', label: 'PIX', icon: QrCode, key: 'F9', color: 'teal' },
                 { id: 'crediario', label: 'Fiado', icon: Users, key: 'F10', color: 'orange' },
+                { id: 'combinado', label: 'Combinado', icon: Layers, key: 'F11', color: 'purple' },
               ].map((method) => {
                 const Icon = method.icon
-                const isSelected = selectedPayment === method.id
+                const isSelected = selectedPayment === method.id || (method.id === 'combinado' && combinedPayments !== null)
                 const colors: Record<string, { bg: string; selected: string }> = {
                   green: { bg: 'bg-green-100 text-green-600', selected: 'bg-green-500 text-white' },
                   blue: { bg: 'bg-blue-100 text-blue-600', selected: 'bg-blue-500 text-white' },
                   indigo: { bg: 'bg-indigo-100 text-indigo-600', selected: 'bg-indigo-500 text-white' },
                   teal: { bg: 'bg-teal-100 text-teal-600', selected: 'bg-teal-500 text-white' },
                   orange: { bg: 'bg-orange-100 text-orange-600', selected: 'bg-orange-500 text-white' },
+                  purple: { bg: 'bg-purple-100 text-purple-600', selected: 'bg-purple-500 text-white' },
                 }
                 return (
                   <button
                     key={method.id}
                     onClick={() => {
-                      setSelectedPayment(method.id)
-                      if (method.id === 'pix') {
-                        setShowPixModal(true)
-                      } else if (method.id === 'crediario' && !clienteSelecionado) {
-                        setShowClienteModal(true)
+                      if (method.id === 'combinado') {
+                        setShowCombinedPaymentModal(true)
+                        setSelectedPayment(null)
+                      } else {
+                        setSelectedPayment(method.id)
+                        setCombinedPayments(null)
+                        setCombinedValorRecebido(undefined)
+                        if (method.id === 'pix') {
+                          setShowPixModal(true)
+                        } else if (method.id === 'crediario' && !clienteSelecionado) {
+                          setShowClienteModal(true)
+                        }
                       }
                     }}
                     disabled={items.length === 0}
@@ -1892,6 +1962,52 @@ export default function PDVPage() {
             </div>
           )}
 
+          {/* Pagamento Combinado - Resumo */}
+          {combinedPayments && combinedPayments.length > 0 && items.length > 0 && (
+            <div className="p-3 border-t">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground uppercase">Pagamento Combinado</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => setShowCombinedPaymentModal(true)}
+                  >
+                    Editar
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  {combinedPayments.map((p, idx) => {
+                    const labels: Record<string, string> = {
+                      dinheiro: 'Dinheiro',
+                      cartao_credito: 'Crédito',
+                      cartao_debito: 'Débito',
+                      pix: 'PIX',
+                      crediario: 'Fiado',
+                    }
+                    return (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span>{labels[p.forma] || p.forma}</span>
+                        <span className="font-medium">{formatCurrency(p.valor)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                {combinedValorRecebido && combinedPayments.some(p => p.forma === 'dinheiro') && (
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Troco</span>
+                      <span className="font-bold">
+                        {formatCurrency(combinedValorRecebido - (combinedPayments.find(p => p.forma === 'dinheiro')?.valor || 0))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* NFC-e */}
           <div className="p-3 border-t">
             <div className="flex items-center justify-between">
@@ -1955,6 +2071,8 @@ export default function PDVPage() {
                     setCpfCliente('')
                     setVendaFinalizada(null)
                     setClienteSelecionado(null)
+                    setCombinedPayments(null)
+                    setCombinedValorRecebido(undefined)
                     setClientePontos(null)
                     setUsarPontos(false)
                     setPontosAUsar('')
@@ -1969,7 +2087,7 @@ export default function PDVPage() {
           ) : (
             <Button
               className="w-full h-14 text-lg"
-              disabled={items.length === 0 || !selectedPayment || paymentLoading || (selectedPayment === 'dinheiro' && troco < 0)}
+              disabled={items.length === 0 || (!selectedPayment && (!combinedPayments || combinedPayments.length === 0)) || paymentLoading || (selectedPayment === 'dinheiro' && troco < 0)}
               onClick={finalizarVenda}
             >
               {paymentLoading ? (
@@ -2378,6 +2496,20 @@ export default function PDVPage() {
         onApplyItemDiscount={(itemId, valor, percentual, motivo) => {
           setDescontoItem(itemId, valor, percentual, motivo)
         }}
+      />
+
+      {/* Modal de Pagamento Combinado */}
+      <PaymentCombinationModal
+        open={showCombinedPaymentModal}
+        onOpenChange={setShowCombinedPaymentModal}
+        total={total}
+        clienteSelecionado={clienteSelecionado}
+        onConfirm={(pagamentos, valorRecebidoDinheiro) => {
+          setCombinedPayments(pagamentos)
+          setCombinedValorRecebido(valorRecebidoDinheiro)
+          setSelectedPayment(null)
+        }}
+        onSelectCliente={() => setShowClienteModal(true)}
       />
     </div>
   )

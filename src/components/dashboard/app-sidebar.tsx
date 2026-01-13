@@ -34,6 +34,7 @@ import {
   FileCheck,
   Calculator,
   Percent,
+  ClipboardList,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -45,6 +46,7 @@ const menuItems = [
     items: [
       { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       { title: 'PDV', href: '/pdv', icon: ShoppingCart },
+      { title: 'Orcamentos', href: '/dashboard/orcamentos', icon: ClipboardList },
     ],
   },
   {
