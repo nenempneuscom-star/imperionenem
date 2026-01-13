@@ -47,14 +47,21 @@ src/
 │   ├── fiscal-config/     # Configuracoes fiscais
 │   │   ├── tabs/          # GeralTab, CertificadoTab, NFCeTab, NFeTab
 │   │   └── types.ts
-│   └── fidelidade/        # Programa de fidelidade
-│       ├── pontos-tab.tsx
-│       ├── config-tab.tsx
-│       ├── ajuste-modal.tsx
-│       ├── produto-card.tsx      # Produtos resgataveis
-│       ├── produtos-grid.tsx
-│       ├── produto-modal.tsx
-│       ├── delete-produto-dialog.tsx
+│   ├── fidelidade/        # Programa de fidelidade
+│   │   ├── pontos-tab.tsx
+│   │   ├── config-tab.tsx
+│   │   ├── ajuste-modal.tsx
+│   │   ├── produto-card.tsx      # Produtos resgataveis
+│   │   ├── produtos-grid.tsx
+│   │   ├── produto-modal.tsx
+│   │   ├── delete-produto-dialog.tsx
+│   │   └── types.ts
+│   └── orcamentos/        # Modulo de orcamentos
+│       ├── cliente-*.tsx  # Card, Form, Modal, Info
+│       ├── itens-*.tsx    # Table, Empty
+│       ├── *-card.tsx     # Observacoes, Resumo, Validade, Acoes
+│       ├── *-modal.tsx    # Produto, Convert dialog
+│       ├── totais-display.tsx
 │       └── types.ts
 ├── lib/
 │   ├── supabase/          # Cliente Supabase
@@ -138,6 +145,27 @@ Produtos resgataveis (`/dashboard/fidelidade/produtos`):
   - **NFCeTab:** Serie, CSC, CFOP para NFC-e
   - **NFeTab:** Serie, CFOP para NF-e
 
+### Orcamentos (`/dashboard/orcamentos`)
+Modulo de orcamentos modularizado em `components/orcamentos`:
+
+Criar orcamento (`/dashboard/orcamentos/novo`):
+- **ClienteCard:** Cliente selecionado com botao alterar
+- **ClienteForm:** Formulario manual (nome, telefone, email, cpf_cnpj)
+- **ClienteModal:** Busca de cliente cadastrado
+- **ItensTable:** Tabela editavel de itens (quantidade, preco, desconto)
+- **ItensEmpty:** Estado vazio com botao adicionar
+- **ProdutoModal:** Busca de produto do estoque
+- **ObservacoesCard:** Observacoes e condicoes
+- **ResumoCard:** Validade, subtotal, desconto, total
+
+Visualizar orcamento (`/dashboard/orcamentos/[id]`):
+- **ClienteInfo:** Dados do cliente (readonly)
+- **ItensTable:** Tabela de itens (readonly)
+- **TotaisDisplay:** Subtotal, desconto, total
+- **ValidadeCard:** Data de validade e status
+- **AcoesCard:** Aprovar, rejeitar, converter
+- **ConvertDialog:** Confirmacao de conversao em venda
+
 ## Banco de Dados (Supabase)
 
 ### Tabelas Principais
@@ -164,6 +192,7 @@ npm run lint     # Verificar linting
    - `fiscal-config` - 4 tabs de configuracoes fiscais
    - `fidelidade` - 2 tabs + 1 modal + 4 componentes de produtos
    - `pdv-caixa` - 4 modals + 4 cards
+   - `orcamentos` - 14 componentes (cliente, itens, modals, cards)
 2. **Tipos compartilhados:** Usar exports de `@/components/*/types.ts`
 3. **Idioma:** Interface em portugues brasileiro (sem acentos em codigo)
 4. **Padrao de tabs:** Componentes de tab usam render props (`filterComponent`, `exportButton`)
@@ -209,4 +238,19 @@ import {
   type Caixa,
   type Resumo,
 } from '@/components/pdv-caixa'
+
+// Importar de orcamentos
+import {
+  ClienteCard,
+  ClienteForm,
+  ClienteModal,
+  ItensTable,
+  ResumoCard,
+  ProdutoModal,
+  type Produto,
+  type Cliente,
+  type ItemOrcamento,
+  formatCurrency,
+  getStatusConfig,
+} from '@/components/orcamentos'
 ```
