@@ -49,7 +49,7 @@ import {
   Layers,
 } from 'lucide-react'
 
-// Import types from shared module
+// Import types and components from shared module
 import {
   type VendaRelatorio,
   type ProdutoRelatorio,
@@ -77,6 +77,15 @@ import {
   OperacionalTab,
   DescontosTab,
   CrediarioTab,
+  ItensVendidosTab,
+  MaisVendidosTab,
+  CurvaABCTab,
+  ClientesTab,
+  EstoqueCriticoTab,
+  ProdutosTab,
+  SaudeTab,
+  FiscalTab,
+  FinanceiroTab,
 } from '@/components/relatorios'
 
 export default function RelatoriosPage() {
@@ -848,139 +857,36 @@ export default function RelatoriosPage() {
 
         {/* ==================== ITENS VENDIDOS ==================== */}
         <TabsContent value="itens-vendidos" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Itens Vendidos no Periodo
-              </CardTitle>
-              <CardDescription>
-                Lista detalhada de todos os produtos e servicos vendidos
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-4 items-end">
-                <FiltroData onBuscar={buscarItensVendidos} />
-                {itensVendidos.length > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => exportarExcel(
-                      itensVendidos.map(i => ({
-                        'Venda #': i.venda_numero,
-                        'Data/Hora': formatDateTime(i.venda_data),
-                        'Cliente': i.cliente_nome,
-                        'Codigo': i.produto_codigo,
-                        'Produto': i.produto_nome,
-                        'Qtd': i.quantidade,
-                        'Unidade': i.unidade,
-                        'Preco Unit.': i.preco_unitario,
-                        'Desconto': i.desconto,
-                        'Total': i.total,
-                      })),
-                      'itens_vendidos'
-                    )}
-                  >
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Exportar Excel
-                  </Button>
-                )}
-              </div>
-
-              {resumoItensVendidos.totalItens > 0 && (
-                <div className="grid gap-4 md:grid-cols-4">
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-4">
-                        <Package className="h-8 w-8 text-blue-500" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Total de Itens</p>
-                          <p className="text-2xl font-bold">{resumoItensVendidos.totalItens}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-4">
-                        <TrendingUp className="h-8 w-8 text-green-500" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Quantidade Total</p>
-                          <p className="text-2xl font-bold">{resumoItensVendidos.totalQuantidade.toFixed(2)}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-4">
-                        <DollarSign className="h-8 w-8 text-emerald-500" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Valor Total</p>
-                          <p className="text-2xl font-bold">{formatCurrency(resumoItensVendidos.totalValor)}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-4">
-                        <Percent className="h-8 w-8 text-orange-500" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Total Descontos</p>
-                          <p className="text-2xl font-bold">{formatCurrency(resumoItensVendidos.totalDesconto)}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {itensVendidos.length > 0 ? (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Venda</TableHead>
-                        <TableHead>Data/Hora</TableHead>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Produto</TableHead>
-                        <TableHead className="text-right">Qtd</TableHead>
-                        <TableHead className="text-right">Preco Unit.</TableHead>
-                        <TableHead className="text-right">Desconto</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {itensVendidos.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">#{item.venda_numero}</TableCell>
-                          <TableCell>{formatDateTime(item.venda_data)}</TableCell>
-                          <TableCell>{item.cliente_nome}</TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{item.produto_nome}</p>
-                              <p className="text-xs text-muted-foreground">{item.produto_codigo}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">{item.quantidade} {item.unidade}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(item.preco_unitario)}</TableCell>
-                          <TableCell className="text-right text-orange-600">
-                            {item.desconto > 0 ? `-${formatCurrency(item.desconto)}` : '-'}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">{formatCurrency(item.total)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="text-center py-10 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Selecione o periodo e clique em "Gerar Relatorio" para ver os itens vendidos</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ItensVendidosTab
+            itens={itensVendidos}
+            resumo={resumoItensVendidos}
+            filterComponent={<FiltroData onBuscar={buscarItensVendidos} />}
+            exportButton={
+              itensVendidos.length > 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={() => exportarExcel(
+                    itensVendidos.map(i => ({
+                      'Venda #': i.venda_numero,
+                      'Data/Hora': formatDateTime(i.venda_data),
+                      'Cliente': i.cliente_nome,
+                      'Codigo': i.produto_codigo,
+                      'Produto': i.produto_nome,
+                      'Qtd': i.quantidade,
+                      'Unidade': i.unidade,
+                      'Preco Unit.': i.preco_unitario,
+                      'Desconto': i.desconto,
+                      'Total': i.total,
+                    })),
+                    'itens_vendidos'
+                  )}
+                >
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Exportar Excel
+                </Button>
+              ) : undefined
+            }
+          />
         </TabsContent>
 
         {/* ==================== DESCONTOS ==================== */}
@@ -1332,136 +1238,11 @@ export default function RelatoriosPage() {
 
         {/* ==================== CLIENTES ==================== */}
         <TabsContent value="clientes" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Relatorio de Clientes
-              </CardTitle>
-              <CardDescription>
-                Conheca seus clientes e identifique oportunidades
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('clientes')} />
-
-              {relatorioClientes && (
-                <>
-                  {/* Resumo */}
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Total Clientes</p>
-                          <p className="text-2xl font-bold">{relatorioClientes.resumo.totalClientes}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-green-50 dark:bg-green-900/20 border-green-200">
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-green-600">Clientes Novos</p>
-                          <p className="text-2xl font-bold text-green-700">
-                            {relatorioClientes.resumo.clientesNovos}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Vendas Identificadas</p>
-                          <p className="text-2xl font-bold">
-                            {relatorioClientes.resumo.percentualIdentificado.toFixed(1)}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {relatorioClientes.resumo.vendasCliente} de {relatorioClientes.resumo.vendasCliente + relatorioClientes.resumo.vendasConsumidor}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Total Vendido</p>
-                          <p className="text-2xl font-bold">
-                            {formatCurrency(relatorioClientes.resumo.totalVendas)}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {/* Melhores Clientes */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4 text-green-500" />
-                          Melhores Clientes (Por Valor)
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {relatorioClientes.melhoresClientes.slice(0, 10).map((c, i) => (
-                            <div key={i} className="flex justify-between items-center">
-                              <div>
-                                <p className="font-medium">{c.nome}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {c.quantidadeCompras} compras | Ticket: {formatCurrency(c.ticketMedio)}
-                                </p>
-                              </div>
-                              <p className="font-bold text-green-600">{formatCurrency(c.totalCompras)}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Clientes que Sumiram */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <UserX className="h-4 w-4 text-red-500" />
-                          Clientes que Sumiram (+30 dias)
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {relatorioClientes.clientesSumiram.length > 0 ? (
-                          <div className="space-y-3">
-                            {relatorioClientes.clientesSumiram.slice(0, 10).map((c, i) => (
-                              <div key={i} className="flex justify-between items-center">
-                                <div>
-                                  <p className="font-medium">{c.nome}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Ultima compra: {formatCurrency(c.totalCompras)}
-                                  </p>
-                                </div>
-                                <Badge variant="destructive">
-                                  {c.diasSemCompra} dias
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-muted-foreground text-center py-4">
-                            Todos os clientes estao ativos!
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                </>
-              )}
-
-              {!relatorioClientes && !loading && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatorio" para conhecer seus clientes</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ClientesTab
+            relatorio={relatorioClientes}
+            loading={loading}
+            filterComponent={<FiltroData onBuscar={() => buscarRelatorioFofoqueira('clientes')} />}
+          />
         </TabsContent>
 
         {/* ==================== OPERACIONAL ==================== */}
@@ -1663,1006 +1444,140 @@ export default function RelatoriosPage() {
 
         {/* ==================== MAIS VENDIDOS ==================== */}
         <TabsContent value="mais-vendidos" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Produtos Mais Vendidos</CardTitle>
-              <CardDescription>
-                Ranking dos produtos mais vendidos no periodo
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-4 items-end">
-                <FiltroData onBuscar={buscarRelatorioMaisVendidos} />
-                {produtos.length > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => exportarExcel(
-                      produtos.map((p, i) => ({
-                        Rank: i + 1,
-                        Codigo: p.codigo,
-                        Produto: p.nome,
-                        Quantidade: p.total_vendido,
-                        Valor_Total: p.valor_vendido,
-                      })),
-                      'mais_vendidos'
-                    )}
-                  >
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Exportar
-                  </Button>
-                )}
-              </div>
-
-              {produtos.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16">Rank</TableHead>
-                      <TableHead>Codigo</TableHead>
-                      <TableHead>Produto</TableHead>
-                      <TableHead className="text-right">Qtd. Vendida</TableHead>
-                      <TableHead className="text-right">Total Faturado</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {produtos.slice(0, 20).map((produto, index) => (
-                      <TableRow key={produto.id}>
-                        <TableCell>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                            index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                            index === 1 ? 'bg-gray-100 text-gray-700' :
-                            index === 2 ? 'bg-orange-100 text-orange-700' :
-                            'bg-primary/10 text-primary'
-                          }`}>
-                            {index + 1}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono">{produto.codigo}</TableCell>
-                        <TableCell>{produto.nome}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {produto.total_vendido} {produto.unidade}
-                        </TableCell>
-                        <TableCell className="text-right font-medium text-green-600">
-                          {formatCurrency(produto.valor_vendido || 0)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-
-              {produtos.length === 0 && !loading && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatorio" para visualizar os produtos mais vendidos</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <MaisVendidosTab
+            produtos={produtos}
+            loading={loading}
+            filterComponent={<FiltroData onBuscar={buscarRelatorioMaisVendidos} />}
+            exportButton={
+              produtos.length > 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={() => exportarExcel(
+                    produtos.map((p, i) => ({
+                      Rank: i + 1,
+                      Codigo: p.codigo,
+                      Produto: p.nome,
+                      Quantidade: p.total_vendido,
+                      Valor_Total: p.valor_vendido,
+                    })),
+                    'mais_vendidos'
+                  )}
+                >
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+              ) : undefined
+            }
+          />
         </TabsContent>
 
         {/* ==================== CURVA ABC ==================== */}
         <TabsContent value="curva-abc" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Curva ABC - Analise de Pareto</CardTitle>
-              <CardDescription>
-                Classificacao dos produtos por importancia no faturamento (80-15-5)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-4 items-end">
-                <FiltroData onBuscar={buscarCurvaABC} />
-                {curvaABC.length > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => exportarExcel(
-                      curvaABC.map((p, i) => ({
-                        Rank: i + 1,
-                        Codigo: p.codigo,
-                        Produto: p.nome,
-                        Quantidade: p.quantidade_vendida,
-                        Valor: p.valor_vendido,
-                        Percentual: p.percentual.toFixed(2),
-                        Acumulado: p.percentual_acumulado.toFixed(2),
-                        Classe: p.classe,
-                      })),
-                      'curva_abc'
-                    )}
-                  >
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Exportar
-                  </Button>
-                )}
-              </div>
-
-              {curvaABC.length > 0 && (
-                <>
-                  {/* Resumo das Classes */}
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 border-green-200">
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-500 text-white text-xl font-bold mb-2">
-                            A
-                          </div>
-                          <p className="text-2xl font-bold text-green-700 dark:text-green-400">
-                            {resumoCurvaABC.qtdClasseA} produtos
-                          </p>
-                          <p className="text-sm text-green-600 dark:text-green-500">
-                            {formatCurrency(resumoCurvaABC.valorClasseA)}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            ~80% do faturamento
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/20 border-yellow-200">
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-yellow-500 text-white text-xl font-bold mb-2">
-                            B
-                          </div>
-                          <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
-                            {resumoCurvaABC.qtdClasseB} produtos
-                          </p>
-                          <p className="text-sm text-yellow-600 dark:text-yellow-500">
-                            {formatCurrency(resumoCurvaABC.valorClasseB)}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            ~15% do faturamento
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/20 border-red-200">
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-500 text-white text-xl font-bold mb-2">
-                            C
-                          </div>
-                          <p className="text-2xl font-bold text-red-700 dark:text-red-400">
-                            {resumoCurvaABC.qtdClasseC} produtos
-                          </p>
-                          <p className="text-sm text-red-600 dark:text-red-500">
-                            {formatCurrency(resumoCurvaABC.valorClasseC)}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            ~5% do faturamento
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground text-lg font-bold mb-2">
-                            <DollarSign className="h-6 w-6" />
-                          </div>
-                          <p className="text-2xl font-bold">
-                            {formatCurrency(resumoCurvaABC.totalFaturamento)}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Faturamento Total
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {curvaABC.length} produtos
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Barra Visual das Classes */}
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Distribuicao do Faturamento</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex h-8 rounded-lg overflow-hidden">
-                        <div
-                          className="bg-green-500 flex items-center justify-center text-white text-xs font-medium"
-                          style={{ width: `${(resumoCurvaABC.valorClasseA / resumoCurvaABC.totalFaturamento) * 100}%` }}
-                        >
-                          A ({((resumoCurvaABC.valorClasseA / resumoCurvaABC.totalFaturamento) * 100).toFixed(0)}%)
-                        </div>
-                        <div
-                          className="bg-yellow-500 flex items-center justify-center text-white text-xs font-medium"
-                          style={{ width: `${(resumoCurvaABC.valorClasseB / resumoCurvaABC.totalFaturamento) * 100}%` }}
-                        >
-                          B ({((resumoCurvaABC.valorClasseB / resumoCurvaABC.totalFaturamento) * 100).toFixed(0)}%)
-                        </div>
-                        <div
-                          className="bg-red-500 flex items-center justify-center text-white text-xs font-medium"
-                          style={{ width: `${(resumoCurvaABC.valorClasseC / resumoCurvaABC.totalFaturamento) * 100}%` }}
-                        >
-                          C ({((resumoCurvaABC.valorClasseC / resumoCurvaABC.totalFaturamento) * 100).toFixed(0)}%)
-                        </div>
-                      </div>
-                      <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                        <span>{resumoCurvaABC.qtdClasseA} itens ({((resumoCurvaABC.qtdClasseA / curvaABC.length) * 100).toFixed(0)}%)</span>
-                        <span>{resumoCurvaABC.qtdClasseB} itens ({((resumoCurvaABC.qtdClasseB / curvaABC.length) * 100).toFixed(0)}%)</span>
-                        <span>{resumoCurvaABC.qtdClasseC} itens ({((resumoCurvaABC.qtdClasseC / curvaABC.length) * 100).toFixed(0)}%)</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Tabela de Produtos */}
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-16">Rank</TableHead>
-                        <TableHead className="w-16">Classe</TableHead>
-                        <TableHead>Codigo</TableHead>
-                        <TableHead>Produto</TableHead>
-                        <TableHead className="text-right">Qtd.</TableHead>
-                        <TableHead className="text-right">Faturamento</TableHead>
-                        <TableHead className="text-right">%</TableHead>
-                        <TableHead className="text-right">% Acum.</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {curvaABC.map((produto, index) => (
-                        <TableRow key={produto.id}>
-                          <TableCell className="font-medium">{index + 1}</TableCell>
-                          <TableCell>
-                            <Badge
-                              className={
-                                produto.classe === 'A'
-                                  ? 'bg-green-500 hover:bg-green-600'
-                                  : produto.classe === 'B'
-                                  ? 'bg-yellow-500 hover:bg-yellow-600'
-                                  : 'bg-red-500 hover:bg-red-600'
-                              }
-                            >
-                              {produto.classe}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-mono">{produto.codigo}</TableCell>
-                          <TableCell>{produto.nome}</TableCell>
-                          <TableCell className="text-right">{produto.quantidade_vendida}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(produto.valor_vendido)}
-                          </TableCell>
-                          <TableCell className="text-right">{produto.percentual.toFixed(2)}%</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {produto.percentual_acumulado.toFixed(2)}%
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </>
-              )}
-
-              {curvaABC.length === 0 && !loading && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Curva ABC" para classificar os produtos</p>
-                  <p className="text-sm mt-2">
-                    A analise ABC identifica quais produtos sao mais importantes para seu faturamento
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <CurvaABCTab
+            produtos={curvaABC}
+            resumo={resumoCurvaABC}
+            loading={loading}
+            filterComponent={<FiltroData onBuscar={buscarCurvaABC} />}
+            exportButton={
+              curvaABC.length > 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={() => exportarExcel(
+                    curvaABC.map((p, i) => ({
+                      Rank: i + 1,
+                      Codigo: p.codigo,
+                      Produto: p.nome,
+                      Quantidade: p.quantidade_vendida,
+                      Valor: p.valor_vendido,
+                      Percentual: p.percentual.toFixed(2),
+                      Acumulado: p.percentual_acumulado.toFixed(2),
+                      Classe: p.classe,
+                    })),
+                    'curva_abc'
+                  )}
+                >
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+              ) : undefined
+            }
+          />
         </TabsContent>
 
         {/* ==================== ESTOQUE CRITICO ==================== */}
         <TabsContent value="estoque-critico" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                Estoque Critico
-              </CardTitle>
-              <CardDescription>
-                Produtos que precisam de atencao urgente
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button onClick={() => buscarRelatorioFofoqueira('estoque-critico')} disabled={loading}>
+          <EstoqueCriticoTab
+            relatorio={relatorioEstoqueCritico}
+            loading={loading}
+            onBuscar={() => buscarRelatorioFofoqueira('estoque-critico')}
+          />
+        </TabsContent>
+
+        {/* ==================== ESTOQUE ==================== */}
+        <TabsContent value="produtos" className="space-y-4">
+          <ProdutosTab
+            produtos={produtos}
+            resumo={resumoEstoque}
+            filterComponent={
+              <Button onClick={buscarRelatorioProdutos} disabled={loading}>
                 {loading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Search className="mr-2 h-4 w-4" />
                 )}
-                Verificar Estoque
+                Gerar Relatorio
               </Button>
-
-              {relatorioEstoqueCritico && (
-                <>
-                  {/* Resumo */}
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Total Produtos</p>
-                          <p className="text-2xl font-bold">{relatorioEstoqueCritico.resumo.totalProdutos}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-yellow-600">Abaixo do Minimo</p>
-                          <p className="text-2xl font-bold text-yellow-700">
-                            {relatorioEstoqueCritico.resumo.abaixoMinimo}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-red-50 dark:bg-red-900/20 border-red-200">
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-red-600">Estoque Zerado</p>
-                          <p className="text-2xl font-bold text-red-700">
-                            {relatorioEstoqueCritico.resumo.estoqueZerado}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-orange-50 dark:bg-orange-900/20 border-orange-200">
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-orange-600">Produtos Parados</p>
-                          <p className="text-2xl font-bold text-orange-700">
-                            {relatorioEstoqueCritico.resumo.produtosParados}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatCurrency(relatorioEstoqueCritico.resumo.valorParado)} parado
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {/* Estoque Zerado */}
-                    {relatorioEstoqueCritico.estoqueZerado.length > 0 && (
-                      <Card className="border-red-200">
-                        <CardHeader>
-                          <CardTitle className="text-base text-red-600">Estoque Zerado</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {relatorioEstoqueCritico.estoqueZerado.map((p: any, i: number) => (
-                              <div key={i} className="flex justify-between items-center text-sm p-2 bg-red-50 dark:bg-red-900/20 rounded">
-                                <div>
-                                  <p className="font-mono text-xs text-muted-foreground">{p.codigo}</p>
-                                  <p className="font-medium">{p.nome}</p>
-                                </div>
-                                <Badge variant="destructive">0 {p.unidade}</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Abaixo do Minimo */}
-                    {relatorioEstoqueCritico.abaixoMinimo.length > 0 && (
-                      <Card className="border-yellow-200">
-                        <CardHeader>
-                          <CardTitle className="text-base text-yellow-600">Abaixo do Minimo</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {relatorioEstoqueCritico.abaixoMinimo.map((p: any, i: number) => (
-                              <div key={i} className="flex justify-between items-center text-sm p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded">
-                                <div>
-                                  <p className="font-mono text-xs text-muted-foreground">{p.codigo}</p>
-                                  <p className="font-medium">{p.nome}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-bold text-yellow-600">{p.estoque_atual} {p.unidade}</p>
-                                  <p className="text-xs text-muted-foreground">Min: {p.estoque_minimo}</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-
-                  {/* Produtos Parados */}
-                  {relatorioEstoqueCritico.produtosParados.length > 0 && (
-                    <Card className="border-orange-200">
-                      <CardHeader>
-                        <CardTitle className="text-base text-orange-600">
-                          Produtos Parados (Sem venda ha 60+ dias)
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Codigo</TableHead>
-                              <TableHead>Produto</TableHead>
-                              <TableHead className="text-right">Estoque</TableHead>
-                              <TableHead className="text-right">Valor Parado</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {relatorioEstoqueCritico.produtosParados.slice(0, 15).map((p: any, i: number) => (
-                              <TableRow key={i}>
-                                <TableCell className="font-mono">{p.codigo}</TableCell>
-                                <TableCell>{p.nome}</TableCell>
-                                <TableCell className="text-right">{p.estoque_atual} {p.unidade}</TableCell>
-                                <TableCell className="text-right text-orange-600 font-medium">
-                                  {formatCurrency(p.valorEstoque)}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
+            }
+            exportButton={
+              produtos.length > 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={() => exportarExcel(
+                    produtos.map(p => ({
+                      Codigo: p.codigo,
+                      Produto: p.nome,
+                      Estoque: p.estoque_atual,
+                      Minimo: p.estoque_minimo,
+                      Preco_Custo: p.preco_custo,
+                      Preco_Venda: p.preco_venda,
+                      Valor_Estoque: p.estoque_atual * p.preco_venda,
+                    })),
+                    'estoque'
                   )}
-                </>
-              )}
-
-              {!relatorioEstoqueCritico && !loading && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Verificar Estoque" para identificar problemas</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ==================== ESTOQUE ==================== */}
-        <TabsContent value="produtos" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatorio de Estoque</CardTitle>
-              <CardDescription>
-                Posicao atual do estoque de produtos
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-4">
-                <Button onClick={buscarRelatorioProdutos} disabled={loading}>
-                  {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="mr-2 h-4 w-4" />
-                  )}
-                  Gerar Relatorio
+                >
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Exportar
                 </Button>
-                {produtos.length > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => exportarExcel(
-                      produtos.map(p => ({
-                        Codigo: p.codigo,
-                        Produto: p.nome,
-                        Estoque: p.estoque_atual,
-                        Minimo: p.estoque_minimo,
-                        Preco_Custo: p.preco_custo,
-                        Preco_Venda: p.preco_venda,
-                        Valor_Estoque: p.estoque_atual * p.preco_venda,
-                      })),
-                      'estoque'
-                    )}
-                  >
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Exportar
-                  </Button>
-                )}
-              </div>
-
-              {resumoEstoque.totalProdutos > 0 && (
-                <div className="grid gap-4 md:grid-cols-4">
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-4">
-                        <Package className="h-8 w-8 text-blue-500" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Total de Produtos</p>
-                          <p className="text-2xl font-bold">{resumoEstoque.totalProdutos}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-4">
-                        <DollarSign className="h-8 w-8 text-green-500" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Valor Venda</p>
-                          <p className="text-2xl font-bold">{formatCurrency(resumoEstoque.valorEstoque)}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-4">
-                        <DollarSign className="h-8 w-8 text-orange-500" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Valor Custo</p>
-                          <p className="text-2xl font-bold">{formatCurrency(resumoEstoque.valorCusto)}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className={resumoEstoque.baixoEstoque > 0 ? 'border-red-500' : ''}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-4">
-                        <Package className={`h-8 w-8 ${resumoEstoque.baixoEstoque > 0 ? 'text-red-500' : 'text-muted-foreground'}`} />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Estoque Baixo</p>
-                          <p className={`text-2xl font-bold ${resumoEstoque.baixoEstoque > 0 ? 'text-red-600' : ''}`}>
-                            {resumoEstoque.baixoEstoque}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {produtos.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Codigo</TableHead>
-                      <TableHead>Produto</TableHead>
-                      <TableHead className="text-right">Estoque</TableHead>
-                      <TableHead className="text-right">Minimo</TableHead>
-                      <TableHead className="text-right">Preco Venda</TableHead>
-                      <TableHead className="text-right">Valor Total</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {produtos.map((produto) => {
-                      const baixo = produto.estoque_atual <= produto.estoque_minimo
-                      return (
-                        <TableRow key={produto.id}>
-                          <TableCell className="font-mono">{produto.codigo}</TableCell>
-                          <TableCell>{produto.nome}</TableCell>
-                          <TableCell className="text-right">
-                            {produto.estoque_atual} {produto.unidade}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {produto.estoque_minimo} {produto.unidade}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(produto.preco_venda)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(produto.estoque_atual * produto.preco_venda)}
-                          </TableCell>
-                          <TableCell>
-                            {baixo ? (
-                              <Badge variant="destructive">Baixo</Badge>
-                            ) : (
-                              <Badge variant="default">OK</Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+              ) : undefined
+            }
+          />
         </TabsContent>
 
         {/* ==================== SAUDE FINANCEIRA ==================== */}
         <TabsContent value="saude" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Heart className="h-5 w-5 text-red-500" />
-                Saude Financeira
-              </CardTitle>
-              <CardDescription>
-                Visao completa da saude do seu negocio
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('saude-financeira')} />
-
-              {relatorioSaude && (
-                <>
-                  {/* DRE Simplificado */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">DRE Simplificado</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded">
-                          <span>Receita Bruta</span>
-                          <span className="font-bold text-green-600">
-                            {formatCurrency(relatorioSaude.periodo.receitaBruta)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-900/20 rounded">
-                          <span>(-) Descontos</span>
-                          <span className="font-bold text-red-600">
-                            -{formatCurrency(relatorioSaude.periodo.descontos)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                          <span>= Receita Liquida</span>
-                          <span className="font-bold text-blue-600">
-                            {formatCurrency(relatorioSaude.periodo.receitaLiquida)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded">
-                          <span>(-) CMV (Custo Mercadoria Vendida)</span>
-                          <span className="font-bold text-orange-600">
-                            -{formatCurrency(relatorioSaude.periodo.cmv)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-primary/10 rounded border-2 border-primary">
-                          <span className="font-bold">= Lucro Bruto</span>
-                          <span className="font-bold text-primary text-xl">
-                            {formatCurrency(relatorioSaude.periodo.lucroBruto)}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Indicadores */}
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Margem Bruta</p>
-                          <p className={`text-2xl font-bold ${
-                            relatorioSaude.indicadores.margemBruta >= 30 ? 'text-green-600' :
-                            relatorioSaude.indicadores.margemBruta >= 15 ? 'text-yellow-600' : 'text-red-600'
-                          }`}>
-                            {relatorioSaude.indicadores.margemBruta.toFixed(1)}%
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">% Descontos</p>
-                          <p className={`text-2xl font-bold ${
-                            relatorioSaude.indicadores.percentualDesconto <= 5 ? 'text-green-600' :
-                            relatorioSaude.indicadores.percentualDesconto <= 10 ? 'text-yellow-600' : 'text-red-600'
-                          }`}>
-                            {relatorioSaude.indicadores.percentualDesconto.toFixed(1)}%
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Ticket Medio</p>
-                          <p className="text-2xl font-bold">
-                            {formatCurrency(relatorioSaude.periodo.ticketMedio)}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Total Vendas</p>
-                          <p className="text-2xl font-bold">
-                            {relatorioSaude.periodo.quantidadeVendas}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Comparativo com Periodo Anterior */}
-                  {relatorioSaude.comparativo && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Comparativo com Periodo Anterior</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-4 md:grid-cols-3">
-                          <div className="p-4 bg-muted rounded-lg text-center">
-                            <p className="text-sm text-muted-foreground">Periodo Anterior</p>
-                            <p className="text-xl font-bold">
-                              {formatCurrency(relatorioSaude.comparativo.receitaAnterior)}
-                            </p>
-                          </div>
-                          <div className="p-4 bg-muted rounded-lg text-center">
-                            <p className="text-sm text-muted-foreground">Periodo Atual</p>
-                            <p className="text-xl font-bold">
-                              {formatCurrency(relatorioSaude.periodo.receitaLiquida)}
-                            </p>
-                          </div>
-                          <div className={`p-4 rounded-lg text-center ${
-                            relatorioSaude.comparativo.crescimento >= 0
-                              ? 'bg-green-50 dark:bg-green-900/20'
-                              : 'bg-red-50 dark:bg-red-900/20'
-                          }`}>
-                            <p className="text-sm text-muted-foreground">Crescimento</p>
-                            <p className={`text-xl font-bold flex items-center justify-center gap-1 ${
-                              relatorioSaude.comparativo.crescimento >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {relatorioSaude.comparativo.crescimento >= 0 ? (
-                                <ArrowUpRight className="h-5 w-5" />
-                              ) : (
-                                <ArrowDownRight className="h-5 w-5" />
-                              )}
-                              {relatorioSaude.comparativo.crescimento.toFixed(1)}%
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatCurrency(Math.abs(relatorioSaude.comparativo.diferencaValor))}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Fluxo de Caixa */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Fluxo de Caixa Projetado</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-4 md:grid-cols-3">
-                        <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
-                          <p className="text-sm text-green-600">A Receber</p>
-                          <p className="text-xl font-bold text-green-700">
-                            {formatCurrency(relatorioSaude.fluxoCaixa.totalReceber)}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
-                          <p className="text-sm text-red-600">A Pagar</p>
-                          <p className="text-xl font-bold text-red-700">
-                            {formatCurrency(relatorioSaude.fluxoCaixa.totalPagar)}
-                          </p>
-                        </div>
-                        <div className={`p-4 rounded-lg text-center ${
-                          relatorioSaude.fluxoCaixa.saldo >= 0
-                            ? 'bg-blue-50 dark:bg-blue-900/20'
-                            : 'bg-orange-50 dark:bg-orange-900/20'
-                        }`}>
-                          <p className="text-sm text-muted-foreground">Saldo Projetado</p>
-                          <p className={`text-xl font-bold ${
-                            relatorioSaude.fluxoCaixa.saldo >= 0 ? 'text-blue-700' : 'text-orange-700'
-                          }`}>
-                            {formatCurrency(relatorioSaude.fluxoCaixa.saldo)}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-
-              {!relatorioSaude && !loading && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatorio" para ver a saude financeira</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <SaudeTab
+            relatorio={relatorioSaude}
+            loading={loading}
+            filterComponent={<FiltroData onBuscar={() => buscarRelatorioFofoqueira('saude-financeira')} />}
+          />
         </TabsContent>
 
         {/* ==================== FISCAL ==================== */}
         <TabsContent value="fiscal" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Relatorio Fiscal
-              </CardTitle>
-              <CardDescription>
-                Notas fiscais emitidas e impostos
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('fiscal')} />
-
-              {relatorioFiscal && (
-                <>
-                  {/* NFC-e e NF-e */}
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {/* NFC-e */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">NFC-e (Cupom Fiscal)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 grid-cols-2">
-                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded text-center">
-                            <p className="text-sm text-green-600">Emitidas</p>
-                            <p className="text-xl font-bold text-green-700">{relatorioFiscal.nfce.emitidas}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatCurrency(relatorioFiscal.nfce.valorEmitido)}
-                            </p>
-                          </div>
-                          <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded text-center">
-                            <p className="text-sm text-red-600">Canceladas</p>
-                            <p className="text-xl font-bold text-red-700">{relatorioFiscal.nfce.canceladas}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatCurrency(relatorioFiscal.nfce.valorCancelado)}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* NF-e */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">NF-e (Nota Fiscal)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-3 grid-cols-2">
-                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded text-center">
-                            <p className="text-sm text-green-600">Emitidas</p>
-                            <p className="text-xl font-bold text-green-700">{relatorioFiscal.nfe.emitidas}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatCurrency(relatorioFiscal.nfe.valorEmitido)}
-                            </p>
-                          </div>
-                          <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded text-center">
-                            <p className="text-sm text-red-600">Canceladas</p>
-                            <p className="text-xl font-bold text-red-700">{relatorioFiscal.nfe.canceladas}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatCurrency(relatorioFiscal.nfe.valorCancelado)}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Impostos (IBPT) */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Impostos Aproximados (IBPT)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-4 md:grid-cols-3">
-                        <div className="p-4 bg-muted rounded-lg text-center">
-                          <p className="text-sm text-muted-foreground">Total Vendas</p>
-                          <p className="text-xl font-bold">
-                            {formatCurrency(relatorioFiscal.impostos.totalVendas)}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-center">
-                          <p className="text-sm text-yellow-600">Total Impostos</p>
-                          <p className="text-xl font-bold text-yellow-700">
-                            {formatCurrency(relatorioFiscal.impostos.totalImpostos)}
-                          </p>
-                        </div>
-                        <div className="p-4 bg-muted rounded-lg text-center">
-                          <p className="text-sm text-muted-foreground">Carga Tributaria Media</p>
-                          <p className="text-xl font-bold">
-                            {relatorioFiscal.impostos.percentualMedio.toFixed(1)}%
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-
-              {!relatorioFiscal && !loading && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatorio" para ver o fiscal</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <FiscalTab
+            relatorio={relatorioFiscal}
+            loading={loading}
+            filterComponent={<FiltroData onBuscar={() => buscarRelatorioFofoqueira('fiscal')} />}
+          />
         </TabsContent>
 
         {/* ==================== FINANCEIRO ==================== */}
         <TabsContent value="financeiro" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumo Financeiro</CardTitle>
-              <CardDescription>
-                Analise de faturamento, custos e lucratividade
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FiltroData onBuscar={buscarResumoFinanceiro} />
-
-              {resumoFinanceiro && (
-                <>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <Card className="bg-green-50 dark:bg-green-900/20 border-green-200">
-                      <CardContent className="pt-6">
-                        <div className="space-y-2">
-                          <p className="text-sm text-green-700 dark:text-green-400">Total de Vendas</p>
-                          <p className="text-3xl font-bold text-green-700 dark:text-green-400">
-                            {formatCurrency(resumoFinanceiro.total_vendas)}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {resumoFinanceiro.quantidade_vendas} vendas
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-orange-50 dark:bg-orange-900/20 border-orange-200">
-                      <CardContent className="pt-6">
-                        <div className="space-y-2">
-                          <p className="text-sm text-orange-700 dark:text-orange-400">Custo das Mercadorias</p>
-                          <p className="text-3xl font-bold text-orange-700 dark:text-orange-400">
-                            {formatCurrency(resumoFinanceiro.total_custo)}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            CMV (Custo Mercadoria Vendida)
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
-                      <CardContent className="pt-6">
-                        <div className="space-y-2">
-                          <p className="text-sm text-blue-700 dark:text-blue-400">Lucro Bruto</p>
-                          <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">
-                            {formatCurrency(resumoFinanceiro.lucro_bruto)}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Margem: {resumoFinanceiro.margem.toFixed(1)}%
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                          <BarChart3 className="h-10 w-10 text-purple-500" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">Ticket Medio</p>
-                            <p className="text-2xl font-bold">{formatCurrency(resumoFinanceiro.ticket_medio)}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                          <TrendingUp className="h-10 w-10 text-green-500" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">Margem de Lucro</p>
-                            <p className="text-2xl font-bold">{resumoFinanceiro.margem.toFixed(1)}%</p>
-                          </div>
-                        </div>
-                        <div className="mt-4">
-                          <Progress value={resumoFinanceiro.margem} className="h-3" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </>
-              )}
-
-              {!resumoFinanceiro && !loading && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatorio" para visualizar o resumo financeiro</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <FinanceiroTab
+            resumo={resumoFinanceiro}
+            loading={loading}
+            filterComponent={<FiltroData onBuscar={buscarResumoFinanceiro} />}
+          />
         </TabsContent>
       </Tabs>
     </div>
