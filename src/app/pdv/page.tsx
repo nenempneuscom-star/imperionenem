@@ -1,69 +1,46 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useCartStore } from '@/stores/cart-store'
 import { useOffline } from '@/lib/hooks/use-offline'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import {
   ShoppingCart,
   Loader2,
-  CheckCircle,
-  FileText,
-  Printer,
-  Users,
-  Star,
-  Scale,
-  Percent,
-  CreditCard,
-  DollarSign,
-  QrCode,
-  Trash2,
-  Layers,
-  ArrowLeft,
-  Wifi,
-  WifiOff,
-  CloudOff,
-  Download,
-  RefreshCw,
-  LockOpen,
-  Wallet,
-  Scan,
   Search,
   Plus,
   Minus,
   X,
+  Scan,
+  Scale,
+  Percent,
 } from 'lucide-react'
 
 // PDV Components
 import {
   PDVHeader,
-  ProductSearch,
-  CartItems,
-  PaymentMethods,
   WeightModal,
   ClientModal,
   HelpModal,
   DiscountModal,
   PaymentCombinationModal,
-  PixQRCode,
   printReceipt,
+  ProductSearchResults,
+  SidebarSummary,
+  ClientFidelidadeSection,
+  PaymentSelector,
+  PaymentDetails,
+  CombinedPaymentSummary,
+  NFCeToggle,
+  ConfirmSaleFooter,
+  PixModal,
+  DiscountButton,
   type DadosRecibo,
   type Produto,
   type Cliente,
@@ -75,6 +52,8 @@ import {
   type Empresa,
   type VendaFinalizada,
   type ItemDesconto,
+  type DescontoGeral,
+  type PaymentMethodId,
   formatCurrency,
   formatUnidade,
   isProdutoPesavel,
@@ -85,10 +64,9 @@ export default function PDVPage() {
   const searchRef = useRef<HTMLInputElement>(null)
   const [search, setSearch] = useState('')
 
-  // Scanner de código de barras
+  // Scanner de codigo de barras
   const lastKeystrokeTime = useRef<number>(0)
   const keystrokeBuffer = useRef<string>('')
-  const scannerTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isScannerInput, setIsScannerInput] = useState(false)
   const [scannerEnabled, setScannerEnabled] = useState(true)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -105,7 +83,7 @@ export default function PDVPage() {
   const [caixaAberto, setCaixaAberto] = useState<CaixaAberto | null>(null)
   const [loadingCaixa, setLoadingCaixa] = useState(true)
   const [empresa, setEmpresa] = useState<Empresa | null>(null)
-  // Estados para crediário
+  // Estados para crediario
   const [showClienteModal, setShowClienteModal] = useState(false)
   const [clienteSearch, setClienteSearch] = useState('')
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -127,7 +105,7 @@ export default function PDVPage() {
   const [configDesconto, setConfigDesconto] = useState<ConfigDesconto | null>(null)
   const [showDescontoModal, setShowDescontoModal] = useState(false)
   const [itemDesconto, setItemDesconto] = useState<ItemDesconto | null>(null)
-  // Estados para produto pesável
+  // Estados para produto pesavel
   const [showWeightModal, setShowWeightModal] = useState(false)
   const [pendingWeightProduct, setPendingWeightProduct] = useState<Produto | null>(null)
   const [weightValue, setWeightValue] = useState('')
@@ -136,7 +114,6 @@ export default function PDVPage() {
 
   const {
     items,
-    desconto,
     descontoGeral,
     addItem,
     removeItem,
@@ -146,7 +123,6 @@ export default function PDVPage() {
     getTotal,
     getTotalItems,
     getDescontoItens,
-    getDescontoTotal,
     setDescontoGeral,
     clearDescontoGeral,
     setDescontoItem,
@@ -172,14 +148,13 @@ export default function PDVPage() {
   const total = Math.max(0, getTotal() - descontoPontos)
   const troco = parseFloat(valorRecebido || '0') - total
 
-  // Verificar se fiscal está configurado e buscar dados da empresa
+  // Verificar se fiscal esta configurado e buscar dados da empresa
   useEffect(() => {
     async function verificarFiscal() {
       try {
         const response = await fetch('/api/fiscal/status')
         if (response.ok) {
           const data = await response.json()
-          // Considera configurado se não retornou erro de certificado
           setFiscalConfigurado(!data.nfce?.mensagem?.includes('não configurado'))
         }
       } catch {
@@ -217,7 +192,6 @@ export default function PDVPage() {
             cidade = end.cidade
             uf = end.uf
             cep = end.cep
-            // Formato: Logradouro, Numero, Bairro
             enderecoFormatado = [
               end.logradouro,
               end.numero,
@@ -225,7 +199,6 @@ export default function PDVPage() {
             ].filter(Boolean).join(', ')
           }
 
-          // Buscar chave PIX do config_fiscal
           let chavePix: string | undefined
           if (empresaData.config_fiscal && typeof empresaData.config_fiscal === 'object') {
             const config = empresaData.config_fiscal as Record<string, unknown>
@@ -272,16 +245,16 @@ export default function PDVPage() {
           setFidelidadeConfig(config)
         }
       } catch {
-        // Programa de fidelidade não configurado
+        // Programa de fidelidade nao configurado
       }
     }
 
     verificarFiscal()
     buscarEmpresa()
     buscarFidelidadeConfig()
-  }, [])
+  }, [supabase])
 
-  // Verificar se há caixa aberto
+  // Verificar se ha caixa aberto
   useEffect(() => {
     async function verificarCaixa() {
       try {
@@ -313,13 +286,6 @@ export default function PDVPage() {
     }
   }
 
-  function formatCurrency(value: number) {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value)
-  }
-
   // Calcula tributos IBPT para os itens do carrinho
   async function calcularTributosIBPT(): Promise<{ valorTributos: number; percentualTributos: number }> {
     let totalTributos = 0
@@ -339,7 +305,7 @@ export default function PDVPage() {
             }
           }
         } catch (error) {
-          console.error('Erro ao buscar alíquota IBPT:', error)
+          console.error('Erro ao buscar aliquota IBPT:', error)
         }
       }
     }
@@ -351,39 +317,18 @@ export default function PDVPage() {
     }
   }
 
-  // Verifica se o produto é vendido por peso/volume
-  function isProdutoPesavel(unidade: string): boolean {
-    const unidadesPesaveis = ['KG', 'G', 'L', 'ML', 'M', 'CM', 'M2', 'M3']
-    return unidadesPesaveis.includes(unidade.toUpperCase())
-  }
-
-  // Formata a unidade para exibição
-  function formatUnidade(unidade: string): string {
-    const unidadesFormatadas: Record<string, string> = {
-      'KG': 'kg',
-      'G': 'g',
-      'L': 'L',
-      'ML': 'ml',
-      'M': 'm',
-      'CM': 'cm',
-      'M2': 'm²',
-      'M3': 'm³',
-    }
-    return unidadesFormatadas[unidade.toUpperCase()] || unidade
-  }
-
-  // Adiciona produto pesável com a quantidade informada
+  // Adiciona produto pesavel com a quantidade informada
   function confirmarPesagem() {
     if (!pendingWeightProduct) return
 
     const peso = parseFloat(weightValue.replace(',', '.'))
     if (isNaN(peso) || peso <= 0) {
-      toast.error('Digite um peso válido')
+      toast.error('Digite um peso valido')
       return
     }
 
     if (peso > pendingWeightProduct.estoque_atual) {
-      toast.error(`Estoque insuficiente. Disponível: ${pendingWeightProduct.estoque_atual} ${pendingWeightProduct.unidade}`)
+      toast.error(`Estoque insuficiente. Disponivel: ${pendingWeightProduct.estoque_atual} ${pendingWeightProduct.unidade}`)
       return
     }
 
@@ -403,7 +348,6 @@ export default function PDVPage() {
       description: `${peso} ${formatUnidade(pendingWeightProduct.unidade)} = ${formatCurrency(valorTotal)}`,
     })
 
-    // Limpar e fechar modal
     setShowWeightModal(false)
     setPendingWeightProduct(null)
     setWeightValue('')
@@ -412,11 +356,11 @@ export default function PDVPage() {
     searchRef.current?.focus()
   }
 
-  // Função para tocar beep de confirmação
+  // Funcao para tocar beep de confirmacao
   const playBeep = useCallback((success: boolean = true) => {
     try {
       if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+        audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
       }
       const ctx = audioContextRef.current
       const oscillator = ctx.createOscillator()
@@ -425,7 +369,6 @@ export default function PDVPage() {
       oscillator.connect(gainNode)
       gainNode.connect(ctx.destination)
 
-      // Frequência: sucesso = agudo, erro = grave
       oscillator.frequency.value = success ? 1200 : 400
       oscillator.type = 'sine'
 
@@ -439,7 +382,7 @@ export default function PDVPage() {
     }
   }, [])
 
-  // Busca rápida para scanner (sem debounce)
+  // Busca rapida para scanner (sem debounce)
   const buscarProdutoScanner = useCallback(async (codigoBarras: string) => {
     if (!codigoBarras.trim()) return
 
@@ -448,7 +391,6 @@ export default function PDVPage() {
       let produto: Produto | null = null
 
       if (isOnline) {
-        // Busca exata por código de barras
         const { data, error } = await supabase
           .from('produtos')
           .select('id, codigo, codigo_barras, nome, preco_venda, estoque_atual, unidade, ncm')
@@ -460,7 +402,6 @@ export default function PDVPage() {
           produto = data
         }
       } else {
-        // Busca offline
         const produtosCache = await buscarProdutoOffline(codigoBarras)
         const encontrado = produtosCache.find(p => p.codigo_barras === codigoBarras)
         if (encontrado) {
@@ -479,11 +420,8 @@ export default function PDVPage() {
       if (produto) {
         if (produto.estoque_atual <= 0) {
           playBeep(false)
-          toast.error('Produto sem estoque', {
-            description: produto.nome,
-          })
+          toast.error('Produto sem estoque', { description: produto.nome })
         } else if (isProdutoPesavel(produto.unidade)) {
-          // Produto pesável - abre modal para digitar peso
           setPendingWeightProduct(produto)
           setWeightValue('')
           setShowWeightModal(true)
@@ -498,15 +436,11 @@ export default function PDVPage() {
             ncm: produto.ncm,
           })
           playBeep(true)
-          toast.success(produto.nome, {
-            description: `${formatCurrency(produto.preco_venda)} adicionado`,
-          })
+          toast.success(produto.nome, { description: `${formatCurrency(produto.preco_venda)} adicionado` })
         }
       } else {
         playBeep(false)
-        toast.error('Produto não encontrado', {
-          description: `Código: ${codigoBarras}`,
-        })
+        toast.error('Produto nao encontrado', { description: `Codigo: ${codigoBarras}` })
       }
     } catch (error) {
       console.error('Erro ao buscar produto:', error)
@@ -528,33 +462,26 @@ export default function PDVPage() {
     const now = Date.now()
     const timeSinceLastKey = now - lastKeystrokeTime.current
 
-    // Scanner digita muito rápido (< 50ms entre teclas)
-    // Humano digita devagar (> 50ms entre teclas)
     if (timeSinceLastKey < 50 && lastKeystrokeTime.current > 0) {
       setIsScannerInput(true)
     }
 
     lastKeystrokeTime.current = now
 
-    // Se pressionar Enter e detectou entrada de scanner
     if (e.key === 'Enter') {
       e.preventDefault()
       const value = (e.target as HTMLInputElement).value.trim()
 
       if (value) {
         if (isScannerInput || value.length >= 8) {
-          // Provavelmente um código de barras (EAN-8, EAN-13, etc)
           buscarProdutoScanner(value)
         } else if (produtos.length === 1) {
-          // Se só tem um produto na lista, adiciona
           adicionarProduto(produtos[0])
         } else if (produtos.length > 1) {
-          // Se tem mais de um, não faz nada (usuário deve selecionar)
           toast.info('Selecione um produto da lista')
         }
       }
 
-      // Reset do detector de scanner
       setIsScannerInput(false)
       keystrokeBuffer.current = ''
     }
@@ -562,7 +489,6 @@ export default function PDVPage() {
 
   // Auto-focus no campo de busca
   useEffect(() => {
-    // Foca no campo quando modais fecham
     if (!showClienteModal && !showAjuda) {
       const timer = setTimeout(() => {
         searchRef.current?.focus()
@@ -571,14 +497,13 @@ export default function PDVPage() {
     }
   }, [showClienteModal, showAjuda])
 
-  // Manter foco no campo de busca (a cada 5 segundos verifica)
+  // Manter foco no campo de busca
   useEffect(() => {
     const interval = setInterval(() => {
       if (!showClienteModal && !showAjuda) {
         const activeElement = document.activeElement
         const isInputFocused = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA'
 
-        // Se nenhum input está focado, foca no campo de busca
         if (!isInputFocused) {
           searchRef.current?.focus()
         }
@@ -600,7 +525,6 @@ export default function PDVPage() {
       let resultados: Produto[] = []
 
       if (isOnline) {
-        // Busca online
         const { data, error } = await supabase
           .from('produtos')
           .select('id, codigo, codigo_barras, nome, preco_venda, estoque_atual, unidade, ncm')
@@ -612,7 +536,6 @@ export default function PDVPage() {
         if (error) throw error
         resultados = data || []
       } else {
-        // Busca offline no cache
         const produtosCache = await buscarProdutoOffline(termo)
         resultados = produtosCache.map(p => ({
           id: p.id,
@@ -625,7 +548,6 @@ export default function PDVPage() {
         }))
       }
 
-      // Se encontrou apenas um produto pelo código de barras exato, adiciona direto
       if (resultados.length === 1 && resultados[0].codigo_barras === termo) {
         adicionarProduto(resultados[0])
         setSearch('')
@@ -636,7 +558,6 @@ export default function PDVPage() {
       }
     } catch (error) {
       console.error('Erro ao buscar produtos:', error)
-      // Se deu erro online, tenta buscar offline
       if (isOnline) {
         try {
           const produtosCache = await buscarProdutoOffline(termo)
@@ -674,12 +595,10 @@ export default function PDVPage() {
       return
     }
 
-    // Se for produto pesável, abre modal para digitar o peso
     if (isProdutoPesavel(produto.unidade)) {
       setPendingWeightProduct(produto)
       setWeightValue('')
       setShowWeightModal(true)
-      // Foca no input de peso após abrir o modal
       setTimeout(() => weightInputRef.current?.focus(), 100)
       return
     }
@@ -700,7 +619,7 @@ export default function PDVPage() {
     searchRef.current?.focus()
   }
 
-  // Buscar clientes para crediário
+  // Buscar clientes para crediario
   async function buscarClientes(termo: string) {
     if (!termo.trim()) {
       setClientes([])
@@ -727,12 +646,12 @@ export default function PDVPage() {
     }
   }
 
-  // Selecionar cliente para crediário
+  // Selecionar cliente para crediario
   function selecionarCliente(cliente: Cliente) {
     const creditoDisponivel = cliente.limite_credito - cliente.saldo_devedor
 
     if (selectedPayment === 'crediario' && creditoDisponivel < total) {
-      toast.error(`Crédito insuficiente. Disponível: ${formatCurrency(creditoDisponivel)}`)
+      toast.error(`Credito insuficiente. Disponivel: ${formatCurrency(creditoDisponivel)}`)
       return
     }
 
@@ -742,7 +661,6 @@ export default function PDVPage() {
     setClientes([])
     toast.success(`Cliente ${cliente.nome} selecionado`)
 
-    // Buscar pontos do cliente se programa de fidelidade ativo
     if (fidelidadeConfig) {
       buscarPontosCliente(cliente.id)
     }
@@ -786,7 +704,6 @@ export default function PDVPage() {
 
   // Finalizar venda (online ou offline)
   async function finalizarVenda() {
-    // Verificar se tem forma de pagamento (simples ou combinado)
     const isCombinedPayment = combinedPayments && combinedPayments.length > 0
 
     if (!selectedPayment && !isCombinedPayment) {
@@ -799,7 +716,6 @@ export default function PDVPage() {
       return
     }
 
-    // Validação para crediário (simples ou combinado)
     const hasCrediario = selectedPayment === 'crediario' || (isCombinedPayment && combinedPayments?.some(p => p.forma === 'crediario'))
     const valorCrediario = isCombinedPayment
       ? combinedPayments?.find(p => p.forma === 'crediario')?.valor || 0
@@ -807,14 +723,14 @@ export default function PDVPage() {
 
     if (hasCrediario) {
       if (!clienteSelecionado) {
-        toast.error('Selecione um cliente para venda no crediário')
+        toast.error('Selecione um cliente para venda no crediario')
         setShowClienteModal(true)
         return
       }
 
       const creditoDisponivel = clienteSelecionado.limite_credito - clienteSelecionado.saldo_devedor
       if (creditoDisponivel < valorCrediario) {
-        toast.error(`Crédito insuficiente. Disponível: ${formatCurrency(creditoDisponivel)}`)
+        toast.error(`Credito insuficiente. Disponivel: ${formatCurrency(creditoDisponivel)}`)
         return
       }
     }
@@ -823,7 +739,6 @@ export default function PDVPage() {
     setNfceResult(null)
 
     try {
-      // Obter usuario
       const { data: { user } } = await supabase.auth.getUser()
       let usuarioId = 'offline-user'
       let operadorNome = 'Operador'
@@ -842,16 +757,14 @@ export default function PDVPage() {
         }
       }
 
-      // Mapear forma de pagamento para código fiscal
       const formasPagamentoFiscal: Record<string, string> = {
         'dinheiro': '01',
         'cartao_credito': '03',
         'cartao_debito': '04',
         'pix': '17',
-        'crediario': '05', // Crédito loja
+        'crediario': '05',
       }
 
-      // Definir pagamentos (combinado ou simples)
       let pagamentosFinais: { forma: string; valor: number }[]
 
       if (isCombinedPayment && combinedPayments) {
@@ -864,7 +777,6 @@ export default function PDVPage() {
         pagamentosFinais = [{ forma: formaPagamento, valor: total }]
       }
 
-      // Calcular desconto total (itens + geral)
       const descontoItensTotal = getDescontoItens()
       const descontoGeralValor = descontoGeral.valor
       const descontoTotal = descontoItensTotal + descontoGeralValor
@@ -892,7 +804,6 @@ export default function PDVPage() {
       }
 
       if (isOnline) {
-        // Tentar salvar online
         try {
           const { data: userData } = await supabase
             .from('usuarios')
@@ -902,7 +813,6 @@ export default function PDVPage() {
 
           if (!userData) throw new Error('Usuario nao encontrado')
 
-          // Criar venda
           const { data: venda, error: vendaError } = await supabase
             .from('vendas')
             .insert({
@@ -924,7 +834,6 @@ export default function PDVPage() {
 
           vendaNumero = venda.numero
 
-          // Registrar movimento no caixa (se houver caixa aberto)
           if (caixaAberto?.id) {
             await supabase
               .from('caixa_movimentos')
@@ -937,7 +846,6 @@ export default function PDVPage() {
               })
           }
 
-          // Criar itens da venda
           const itensVenda = items.map((item) => ({
             venda_id: venda.id,
             produto_id: item.id,
@@ -955,7 +863,6 @@ export default function PDVPage() {
 
           if (itensError) throw itensError
 
-          // Criar pagamentos (um ou múltiplos)
           const pagamentosParaInserir = pagamentosFinais.map(p => ({
             venda_id: venda.id,
             forma_pagamento: p.forma,
@@ -968,10 +875,9 @@ export default function PDVPage() {
 
           if (pagamentoError) throw pagamentoError
 
-          // Registrar no crediário se tiver pagamento fiado
           const pagamentoCrediario = pagamentosFinais.find(p => p.forma === 'crediario')
           if (pagamentoCrediario && clienteSelecionado) {
-            const { error: crediarioError } = await supabase
+            await supabase
               .from('crediario')
               .insert({
                 empresa_id: userData.empresa_id,
@@ -983,21 +889,13 @@ export default function PDVPage() {
                 saldo_posterior: clienteSelecionado.saldo_devedor + pagamentoCrediario.valor,
                 descricao: `Venda #${venda.numero} - PDV`,
               })
-
-            if (crediarioError) {
-              console.error('Erro ao registrar crediário:', crediarioError)
-              // Não bloqueia a venda, apenas loga o erro
-            }
           }
 
-          // Programa de Fidelidade - Registrar resgate e acúmulo
           if (fidelidadeConfig && clienteSelecionado) {
             try {
-              // Verificar/criar conta de pontos do cliente
               let saldoAtual = clientePontos?.saldo_pontos || 0
 
-              // Sempre garantir que existe o registro de pontos
-              const { error: upsertError } = await supabase
+              await supabase
                 .from('fidelidade_pontos')
                 .upsert({
                   empresa_id: userData.empresa_id,
@@ -1007,11 +905,6 @@ export default function PDVPage() {
                   total_resgatado: 0,
                 }, { onConflict: 'empresa_id,cliente_id', ignoreDuplicates: true })
 
-              if (upsertError) {
-                console.error('Erro ao criar registro de pontos:', upsertError)
-              }
-
-              // 1. Registrar resgate de pontos (se usou)
               if (usarPontos && pontosUsados > 0) {
                 await supabase
                   .from('fidelidade_movimentos')
@@ -1027,16 +920,13 @@ export default function PDVPage() {
                     descricao: `Resgate na venda #${venda.numero}`,
                   })
 
-                // Atualizar saldo local
                 saldoAtual -= pontosUsados
               }
 
-              // 2. Calcular e registrar acúmulo de pontos
-              const valorParaPontos = total // Valor após desconto
+              const valorParaPontos = total
               const pontosGanhosVenda = Math.floor(valorParaPontos * fidelidadeConfig.pontos_por_real)
 
               if (pontosGanhosVenda > 0) {
-                // Calcular data de expiração
                 const dataExpiracao = fidelidadeConfig.validade_dias > 0
                   ? new Date(Date.now() + fidelidadeConfig.validade_dias * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
                   : null
@@ -1053,18 +943,16 @@ export default function PDVPage() {
                     saldo_posterior: saldoAtual + pontosGanhosVenda,
                     valor_venda: valorParaPontos,
                     data_expiracao: dataExpiracao,
-                    descricao: `Acúmulo na venda #${venda.numero}`,
+                    descricao: `Acumulo na venda #${venda.numero}`,
                   })
 
                 setPontosGanhos(pontosGanhosVenda)
               }
             } catch (fidelError) {
               console.error('Erro no programa de fidelidade:', fidelError)
-              // Não bloqueia a venda
             }
           }
 
-          // Emitir NFC-e se configurado e habilitado
           if (emitirNFCe && fiscalConfigurado) {
             try {
               const nfceResponse = await fetch('/api/fiscal/nfce', {
@@ -1087,7 +975,7 @@ export default function PDVPage() {
                     cpf_cnpj: cpfCliente.replace(/\D/g, ''),
                   } : undefined,
                   valorTotal: total,
-                  valorDesconto: desconto,
+                  valorDesconto: descontoTotal,
                 }),
               })
 
@@ -1095,7 +983,6 @@ export default function PDVPage() {
               setNfceResult(nfceData)
 
               if (nfceData.sucesso) {
-                // Atualizar venda com dados da NFC-e
                 await supabase
                   .from('vendas')
                   .update({
@@ -1106,16 +993,11 @@ export default function PDVPage() {
 
                 toast.success('NFC-e emitida com sucesso!')
               } else {
-                toast.error('Erro ao emitir NFC-e', {
-                  description: nfceData.mensagem,
-                })
+                toast.error('Erro ao emitir NFC-e', { description: nfceData.mensagem })
               }
             } catch (nfceError) {
               console.error('Erro ao emitir NFC-e:', nfceError)
-              setNfceResult({
-                sucesso: false,
-                mensagem: 'Erro ao comunicar com SEFAZ',
-              })
+              setNfceResult({ sucesso: false, mensagem: 'Erro ao comunicar com SEFAZ' })
               toast.error('Erro ao emitir NFC-e')
             }
           }
@@ -1126,14 +1008,10 @@ export default function PDVPage() {
           toast.info('Venda salva para sincronizar depois')
         }
       } else {
-        // Salvar offline
         await salvarVenda(vendaData)
-        toast.info('Venda salva offline', {
-          description: 'Sera sincronizada quando voltar a conexao',
-        })
+        toast.info('Venda salva offline', { description: 'Sera sincronizada quando voltar a conexao' })
       }
 
-      // Calcular tributos IBPT (Lei 12.741/2012)
       let tributos = { valorTributos: 0, percentualTributos: 0 }
       try {
         tributos = await calcularTributosIBPT()
@@ -1141,8 +1019,6 @@ export default function PDVPage() {
         console.error('Erro ao calcular tributos IBPT:', error)
       }
 
-      // Salvar dados da venda para impressão
-      // Calcular valor recebido e troco para pagamento combinado ou simples
       const temDinheiroNoPagamento = pagamentosFinais.some(p => p.forma === 'dinheiro')
       const valorDinheiroNoPagamento = pagamentosFinais.find(p => p.forma === 'dinheiro')?.valor || 0
       const valorRecebidoFinal = isCombinedPayment
@@ -1174,26 +1050,9 @@ export default function PDVPage() {
 
       setPaymentSuccess(true)
 
-      // Após alguns segundos, limpar e resetar (não resetar automaticamente para permitir impressão)
       setTimeout(() => {
-        clearCart()
-        setPaymentSuccess(false)
-        setSelectedPayment(null)
-        setValorRecebido('')
-        setNfceResult(null)
-        setCpfCliente('')
-        setVendaFinalizada(null)
-        setClienteSelecionado(null)
-        // Reset pagamento combinado
-        setCombinedPayments(null)
-        setCombinedValorRecebido(undefined)
-        // Reset fidelidade
-        setClientePontos(null)
-        setUsarPontos(false)
-        setPontosAUsar('')
-        setPontosGanhos(null)
-        searchRef.current?.focus()
-      }, 10000) // 10 segundos para dar tempo de imprimir
+        resetarVenda()
+      }, 10000)
 
     } catch (error) {
       console.error('Erro ao finalizar venda:', error)
@@ -1203,14 +1062,31 @@ export default function PDVPage() {
     }
   }
 
+  function resetarVenda() {
+    clearCart()
+    setPaymentSuccess(false)
+    setSelectedPayment(null)
+    setValorRecebido('')
+    setNfceResult(null)
+    setCpfCliente('')
+    setVendaFinalizada(null)
+    setClienteSelecionado(null)
+    setCombinedPayments(null)
+    setCombinedValorRecebido(undefined)
+    setClientePontos(null)
+    setUsarPontos(false)
+    setPontosAUsar('')
+    setPontosGanhos(null)
+    searchRef.current?.focus()
+  }
+
   // Imprimir cupom
   function imprimirCupom() {
     if (!vendaFinalizada) {
-      toast.error('Dados da venda não disponíveis')
+      toast.error('Dados da venda nao disponiveis')
       return
     }
 
-    // Usar dados da empresa ou valores padrão
     const empresaData = empresa || {
       nome: 'EMPRESA',
       cnpj: '00000000000000',
@@ -1221,7 +1097,6 @@ export default function PDVPage() {
       telefone: undefined,
     }
 
-    // Montar dados do cliente (clienteSelecionado ou CPF avulso)
     let dadosCliente: { nome?: string; cpf?: string; telefone?: string; cidade?: string } | undefined
     if (clienteSelecionado) {
       dadosCliente = {
@@ -1264,10 +1139,46 @@ export default function PDVPage() {
     printReceipt({ dados: dadosRecibo, largura: '80mm' })
   }
 
+  // Handler para selecao de pagamento
+  function handleSelectPayment(paymentId: PaymentMethodId) {
+    if (paymentId === 'combinado') {
+      setShowCombinedPaymentModal(true)
+      setSelectedPayment(null)
+    } else {
+      setSelectedPayment(paymentId)
+      setCombinedPayments(null)
+      setCombinedValorRecebido(undefined)
+      if (paymentId === 'pix') {
+        setShowPixModal(true)
+      } else if (paymentId === 'crediario' && !clienteSelecionado) {
+        setShowClienteModal(true)
+      }
+    }
+  }
+
+  // Handler para usar pontos
+  function handleUsarPontosChange(usar: boolean, pontosDisponiveis: number) {
+    setUsarPontos(usar)
+    if (!usar) {
+      setPontosAUsar('')
+    } else {
+      setPontosAUsar(String(pontosDisponiveis))
+    }
+  }
+
+  // Handler para desconto geral
+  function handleApplyDesconto(valor: number, percentual: number, motivo?: string) {
+    setDescontoGeral({ valor, percentual, motivo: motivo || '' })
+  }
+
+  // Handler para desconto item
+  function handleApplyItemDesconto(itemId: string, valor: number, percentual: number, motivo?: string) {
+    setDescontoItem(itemId, valor, percentual, motivo || '')
+  }
+
   // Atalhos de teclado
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Ignorar se estiver digitando em input
       const target = e.target as HTMLElement
       const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'
 
@@ -1286,7 +1197,6 @@ export default function PDVPage() {
           break
         case 'F4':
           e.preventDefault()
-          // F4 agora confirma a venda diretamente (Split View)
           if (items.length > 0 && selectedPayment && !paymentLoading) {
             if (selectedPayment === 'dinheiro' && troco < 0) {
               toast.error('Valor recebido insuficiente')
@@ -1307,21 +1217,15 @@ export default function PDVPage() {
           break
         case 'F6':
           e.preventDefault()
-          if (items.length > 0) {
-            setSelectedPayment('dinheiro')
-          }
+          if (items.length > 0) setSelectedPayment('dinheiro')
           break
         case 'F7':
           e.preventDefault()
-          if (items.length > 0) {
-            setSelectedPayment('cartao_credito')
-          }
+          if (items.length > 0) setSelectedPayment('cartao_credito')
           break
         case 'F8':
           e.preventDefault()
-          if (items.length > 0) {
-            setSelectedPayment('cartao_debito')
-          }
+          if (items.length > 0) setSelectedPayment('cartao_debito')
           break
         case 'F9':
           e.preventDefault()
@@ -1334,16 +1238,12 @@ export default function PDVPage() {
           e.preventDefault()
           if (items.length > 0) {
             setSelectedPayment('crediario')
-            if (!clienteSelecionado) {
-              setShowClienteModal(true)
-            }
+            if (!clienteSelecionado) setShowClienteModal(true)
           }
           break
         case 'F11':
           e.preventDefault()
-          if (fidelidadeConfig) {
-            setShowClienteModal(true)
-          }
+          if (fidelidadeConfig) setShowClienteModal(true)
           break
         case 'F12':
           e.preventDefault()
@@ -1351,7 +1251,6 @@ export default function PDVPage() {
           break
         case 'd':
         case 'D':
-          // Ctrl+D para desconto no total
           if (e.ctrlKey && items.length > 0) {
             e.preventDefault()
             setItemDesconto(null)
@@ -1359,13 +1258,10 @@ export default function PDVPage() {
           }
           break
         case 'Escape':
-          if (showAjuda) {
-            setShowAjuda(false)
-          } else if (showClienteModal) {
-            setShowClienteModal(false)
-          } else if (showDescontoModal) {
-            setShowDescontoModal(false)
-          } else if (selectedPayment) {
+          if (showAjuda) setShowAjuda(false)
+          else if (showClienteModal) setShowClienteModal(false)
+          else if (showDescontoModal) setShowDescontoModal(false)
+          else if (selectedPayment) {
             setSelectedPayment(null)
             setValorRecebido('')
           } else {
@@ -1377,11 +1273,15 @@ export default function PDVPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [items, selectedPayment, clienteSelecionado, fidelidadeConfig, showAjuda, showClienteModal, showDescontoModal, clearCart, paymentLoading, troco, finalizarVenda])
+  }, [items, selectedPayment, clienteSelecionado, fidelidadeConfig, showAjuda, showClienteModal, showDescontoModal, clearCart, paymentLoading, troco])
+
+  const canConfirmSale = items.length > 0 &&
+    (selectedPayment !== null || (combinedPayments !== null && combinedPayments.length > 0)) &&
+    !(selectedPayment === 'dinheiro' && troco < 0)
 
   return (
     <div className="flex h-screen">
-      {/* Área Principal - Produtos */}
+      {/* Area Principal - Produtos */}
       <div className="flex-1 flex flex-col p-4">
         {/* Header */}
         <PDVHeader
@@ -1400,7 +1300,7 @@ export default function PDVPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             ref={searchRef}
-            placeholder={scannerEnabled ? "Escaneie ou digite o código do produto..." : "Digite o código ou nome do produto..."}
+            placeholder={scannerEnabled ? "Escaneie ou digite o codigo do produto..." : "Digite o codigo ou nome do produto..."}
             className={`pl-12 pr-24 h-14 text-lg ${isScannerInput ? 'border-green-500 ring-2 ring-green-500/20' : ''}`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -1408,9 +1308,7 @@ export default function PDVPage() {
             autoFocus
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            {loading && (
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            )}
+            {loading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
             {isScannerInput && (
               <Badge variant="default" className="bg-green-500 animate-pulse">
                 <Scan className="h-3 w-3 mr-1" />
@@ -1430,125 +1328,57 @@ export default function PDVPage() {
         </div>
 
         {/* Lista de produtos encontrados */}
-        {produtos.length > 0 && (
-          <Card className="mb-4">
-            <CardContent className="p-2">
-              <ScrollArea className="max-h-64">
-                {produtos.map((produto) => {
-                  const pesavel = isProdutoPesavel(produto.unidade)
-                  return (
-                    <button
-                      key={produto.id}
-                      className="w-full flex items-center justify-between p-3 hover:bg-muted rounded-lg transition-colors text-left"
-                      onClick={() => adicionarProduto(produto)}
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{produto.nome}</p>
-                          {pesavel && (
-                            <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50">
-                              <Scale className="h-3 w-3 mr-1" />
-                              Pesável
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Código: {produto.codigo}
-                          {produto.codigo_barras && ` | EAN: ${produto.codigo_barras}`}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">
-                          {formatCurrency(produto.preco_venda)}
-                          {pesavel && <span className="text-sm font-normal text-muted-foreground">/{formatUnidade(produto.unidade)}</span>}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Estoque: {produto.estoque_atual} {formatUnidade(produto.unidade)}
-                        </p>
-                      </div>
-                    </button>
-                  )
-                })}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
+        <ProductSearchResults produtos={produtos} onSelect={adicionarProduto} />
 
-        {/* Área de itens do carrinho (visualização principal) */}
+        {/* Area de itens do carrinho */}
         <Card className="flex-1 overflow-hidden">
           <CardContent className="p-0 h-full flex flex-col">
             {items.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-6">
                 <ShoppingCart className="h-20 w-20 mb-4 opacity-20" />
                 <p className="text-xl">Carrinho vazio</p>
-                <p className="text-sm">Digite o código de barras ou nome do produto</p>
+                <p className="text-sm">Digite o codigo de barras ou nome do produto</p>
               </div>
             ) : (
               <ScrollArea className="flex-1">
                 <div className="divide-y">
                   {items.map((item, index) => {
-                    const isPesavel = item.unidade && ['KG', 'G', 'L', 'ML', 'M', 'CM', 'M2', 'M3'].includes(item.unidade.toUpperCase())
+                    const itemPesavel = item.unidade && ['KG', 'G', 'L', 'ML', 'M', 'CM', 'M2', 'M3'].includes(item.unidade.toUpperCase())
                     return (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-4 p-4 hover:bg-muted/50"
-                      >
-                        <span className="text-2xl font-bold text-muted-foreground w-8">
-                          {index + 1}
-                        </span>
+                      <div key={item.id} className="flex items-center gap-4 p-4 hover:bg-muted/50">
+                        <span className="text-2xl font-bold text-muted-foreground w-8">{index + 1}</span>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <p className="font-medium">{item.nome}</p>
-                            {isPesavel && (
-                              <Scale className="h-4 w-4 text-orange-500" />
-                            )}
+                            {itemPesavel && <Scale className="h-4 w-4 text-orange-500" />}
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {formatCurrency(item.preco)}{isPesavel ? `/${formatUnidade(item.unidade!)}` : ''} x {isPesavel ? item.quantidade.toFixed(3).replace('.', ',') : item.quantidade} {isPesavel ? formatUnidade(item.unidade!) : ''}
+                            {formatCurrency(item.preco)}{itemPesavel ? `/${formatUnidade(item.unidade!)}` : ''} x {itemPesavel ? item.quantidade.toFixed(3).replace('.', ',') : item.quantidade} {itemPesavel ? formatUnidade(item.unidade!) : ''}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {isPesavel ? (
-                            // Para produtos pesáveis, mostra o peso formatado
+                          {itemPesavel ? (
                             <span className="w-24 text-center font-medium text-orange-600">
                               {item.quantidade.toFixed(3).replace('.', ',')} {formatUnidade(item.unidade!)}
                             </span>
                           ) : (
-                            // Para produtos unitários, mostra controles de quantidade
                             <>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => updateQuantity(item.id, item.quantidade - 1)}
-                              >
+                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantidade - 1)}>
                                 <Minus className="h-4 w-4" />
                               </Button>
-                              <span className="w-12 text-center font-medium">
-                                {item.quantidade}
-                              </span>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => updateQuantity(item.id, item.quantidade + 1)}
-                              >
+                              <span className="w-12 text-center font-medium">{item.quantidade}</span>
+                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantidade + 1)}>
                                 <Plus className="h-4 w-4" />
                               </Button>
                             </>
                           )}
                         </div>
                         <div className="w-28 text-right">
-                          <p className="font-bold text-lg">
-                            {formatCurrency((item.preco * item.quantidade) - (item.desconto || 0))}
-                          </p>
+                          <p className="font-bold text-lg">{formatCurrency((item.preco * item.quantidade) - (item.desconto || 0))}</p>
                           {item.desconto && item.desconto > 0 && (
-                            <p className="text-xs text-destructive">
-                              -{formatCurrency(item.desconto)} ({item.descontoPercentual?.toFixed(1)}%)
-                            </p>
+                            <p className="text-xs text-destructive">-{formatCurrency(item.desconto)} ({item.descontoPercentual?.toFixed(1)}%)</p>
                           )}
                         </div>
-                        {/* Botao de desconto por item */}
                         {configDesconto?.permitir_desconto_item && (
                           <Button
                             variant="ghost"
@@ -1559,12 +1389,7 @@ export default function PDVPage() {
                                 clearDescontoItem(item.id)
                                 toast.success('Desconto removido')
                               } else {
-                                setItemDesconto({
-                                  id: item.id,
-                                  nome: item.nome,
-                                  preco: item.preco,
-                                  quantidade: item.quantidade,
-                                })
+                                setItemDesconto({ id: item.id, nome: item.nome, preco: item.preco, quantidade: item.quantidade })
                                 setShowDescontoModal(true)
                               }
                             }}
@@ -1573,12 +1398,7 @@ export default function PDVPage() {
                             <Percent className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive h-8 w-8"
-                          onClick={() => removeItem(item.id)}
-                        >
+                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeItem(item.id)}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
@@ -1591,412 +1411,95 @@ export default function PDVPage() {
         </Card>
       </div>
 
-      {/* Sidebar - Resumo e Pagamento (Split View) */}
+      {/* Sidebar - Resumo e Pagamento */}
       <div className="w-[420px] border-l flex flex-col bg-muted/30">
         <ScrollArea className="flex-1">
-          {/* Header com Total */}
-          <div className="p-4 border-b bg-gradient-to-r from-primary/10 to-primary/5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5" />
-                <span className="font-semibold">Resumo</span>
-                {getTotalItems() > 0 && (
-                  <Badge variant="secondary">{getTotalItems()} itens</Badge>
-                )}
-              </div>
-              {items.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={clearCart} className="text-destructive h-8">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            <div className="mt-3 flex items-baseline justify-between">
-              <div className="text-sm text-muted-foreground">
-                <div>Subtotal: {formatCurrency(subtotal)}</div>
-                {getDescontoItens() > 0 && (
-                  <div className="text-destructive">Desc. Itens: -{formatCurrency(getDescontoItens())}</div>
-                )}
-                {descontoGeral.valor > 0 && (
-                  <div className="text-destructive flex items-center gap-1">
-                    Desc. Geral: -{formatCurrency(descontoGeral.valor)}
-                    <button
-                      onClick={() => {
-                        clearDescontoGeral()
-                        toast.success('Desconto removido')
-                      }}
-                      className="text-xs hover:underline"
-                    >
-                      (remover)
-                    </button>
-                  </div>
-                )}
-                {descontoPontos > 0 && <div className="text-amber-600">Pontos: -{formatCurrency(descontoPontos)}</div>}
-              </div>
-              <div className="text-3xl font-bold text-primary">{formatCurrency(total)}</div>
-            </div>
-          </div>
+          <SidebarSummary
+            subtotal={subtotal}
+            total={total}
+            totalItems={getTotalItems()}
+            hasItems={items.length > 0}
+            descontoItens={getDescontoItens()}
+            descontoGeral={descontoGeral}
+            descontoPontos={descontoPontos}
+            onClearCart={clearCart}
+            onClearDescontoGeral={() => {
+              clearDescontoGeral()
+              toast.success('Desconto removido')
+            }}
+          />
 
-          {/* Seção de Cliente/Fidelidade */}
-          {(fidelidadeConfig || selectedPayment === 'crediario') && (
-            <div className="p-3 border-b">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Cliente
-                </span>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowClienteModal(true)}>
-                  {clienteSelecionado ? 'Trocar' : 'Selecionar'}
-                </Button>
-              </div>
-              {clienteSelecionado ? (
-                <div className="bg-muted/50 rounded-lg p-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{clienteSelecionado.nome}</p>
-                      <p className="text-xs text-muted-foreground">{clienteSelecionado.cpf_cnpj}</p>
-                    </div>
-                    {fidelidadeConfig && (
-                      <div className="text-right">
-                        <div className="flex items-center gap-1 text-amber-600">
-                          <Star className="h-3 w-3" />
-                          <span className="font-bold text-sm">{(clientePontos?.saldo_pontos || 0).toLocaleString('pt-BR')}</span>
-                        </div>
-                        {clientePontos && clientePontos.saldo_pontos > 0 && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <Switch
-                              id="usar-pontos-split"
-                              checked={usarPontos}
-                              onCheckedChange={(checked) => {
-                                setUsarPontos(checked)
-                                if (!checked) setPontosAUsar('')
-                                else setPontosAUsar(String(clientePontos.saldo_pontos))
-                              }}
-                              className="scale-75"
-                            />
-                            <Label htmlFor="usar-pontos-split" className="text-xs">Usar pts</Label>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  {selectedPayment === 'crediario' && (
-                    <div className="mt-2 pt-2 border-t flex justify-between text-xs">
-                      <span>Crédito disponível:</span>
-                      <span className="font-bold text-green-600">
-                        {formatCurrency(clienteSelecionado.limite_credito - clienteSelecionado.saldo_devedor)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">Identifique para usar pontos ou crediário</p>
-              )}
-            </div>
+          <ClientFidelidadeSection
+            fidelidadeConfig={fidelidadeConfig}
+            selectedPayment={selectedPayment}
+            clienteSelecionado={clienteSelecionado}
+            clientePontos={clientePontos}
+            usarPontos={usarPontos}
+            onUsarPontosChange={handleUsarPontosChange}
+            onShowClienteModal={() => setShowClienteModal(true)}
+          />
+
+          <DiscountButton
+            hasItems={items.length > 0}
+            configDesconto={configDesconto}
+            descontoGeral={descontoGeral}
+            onShowDescontoModal={() => {
+              setItemDesconto(null)
+              setShowDescontoModal(true)
+            }}
+          />
+
+          <PaymentSelector
+            selectedPayment={selectedPayment}
+            hasCombinedPayments={combinedPayments !== null && combinedPayments.length > 0}
+            disabled={items.length === 0}
+            onSelectPayment={handleSelectPayment}
+          />
+
+          {items.length > 0 && (
+            <PaymentDetails
+              selectedPayment={selectedPayment}
+              total={total}
+              troco={troco}
+              valorRecebido={valorRecebido}
+              onValorRecebidoChange={setValorRecebido}
+              clienteSelecionado={clienteSelecionado}
+              onShowPixModal={() => setShowPixModal(true)}
+              onShowClienteModal={() => setShowClienteModal(true)}
+            />
           )}
 
-          {/* Botao de Desconto */}
-          {items.length > 0 && configDesconto?.permitir_desconto_total && (
-            <div className="p-3 border-b">
-              <Button
-                variant={descontoGeral.valor > 0 ? 'destructive' : 'outline'}
-                className="w-full"
-                onClick={() => {
-                  setItemDesconto(null)
-                  setShowDescontoModal(true)
-                }}
-              >
-                <Percent className="h-4 w-4 mr-2" />
-                {descontoGeral.valor > 0
-                  ? `Desconto: ${formatCurrency(descontoGeral.valor)} (${descontoGeral.percentual.toFixed(1)}%)`
-                  : 'Aplicar Desconto (Ctrl+D)'
-                }
-              </Button>
-            </div>
+          {items.length > 0 && (
+            <CombinedPaymentSummary
+              payments={combinedPayments}
+              valorRecebido={combinedValorRecebido}
+              onEdit={() => setShowCombinedPaymentModal(true)}
+            />
           )}
 
-          {/* Formas de Pagamento */}
-          <div className="p-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Forma de Pagamento</p>
-            <div className="grid grid-cols-6 gap-1">
-              {[
-                { id: 'dinheiro', label: 'Dinheiro', icon: DollarSign, key: 'F6', color: 'green' },
-                { id: 'cartao_credito', label: 'Crédito', icon: CreditCard, key: 'F7', color: 'blue' },
-                { id: 'cartao_debito', label: 'Débito', icon: CreditCard, key: 'F8', color: 'indigo' },
-                { id: 'pix', label: 'PIX', icon: QrCode, key: 'F9', color: 'teal' },
-                { id: 'crediario', label: 'Fiado', icon: Users, key: 'F10', color: 'orange' },
-                { id: 'combinado', label: 'Combinado', icon: Layers, key: 'F11', color: 'purple' },
-              ].map((method) => {
-                const Icon = method.icon
-                const isSelected = selectedPayment === method.id || (method.id === 'combinado' && combinedPayments !== null)
-                const colors: Record<string, { bg: string; selected: string }> = {
-                  green: { bg: 'bg-green-100 text-green-600', selected: 'bg-green-500 text-white' },
-                  blue: { bg: 'bg-blue-100 text-blue-600', selected: 'bg-blue-500 text-white' },
-                  indigo: { bg: 'bg-indigo-100 text-indigo-600', selected: 'bg-indigo-500 text-white' },
-                  teal: { bg: 'bg-teal-100 text-teal-600', selected: 'bg-teal-500 text-white' },
-                  orange: { bg: 'bg-orange-100 text-orange-600', selected: 'bg-orange-500 text-white' },
-                  purple: { bg: 'bg-purple-100 text-purple-600', selected: 'bg-purple-500 text-white' },
-                }
-                return (
-                  <button
-                    key={method.id}
-                    onClick={() => {
-                      if (method.id === 'combinado') {
-                        setShowCombinedPaymentModal(true)
-                        setSelectedPayment(null)
-                      } else {
-                        setSelectedPayment(method.id)
-                        setCombinedPayments(null)
-                        setCombinedValorRecebido(undefined)
-                        if (method.id === 'pix') {
-                          setShowPixModal(true)
-                        } else if (method.id === 'crediario' && !clienteSelecionado) {
-                          setShowClienteModal(true)
-                        }
-                      }
-                    }}
-                    disabled={items.length === 0}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                      isSelected
-                        ? `${colors[method.color].selected} ring-2 ring-offset-1 ring-${method.color}-500`
-                        : `${colors[method.color].bg} hover:opacity-80`
-                    }`}
-                    title={`${method.label} (${method.key})`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span className="text-[10px] font-medium leading-none">{method.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Detalhes do Pagamento Selecionado */}
-          {selectedPayment && items.length > 0 && (
-            <div className="p-3 border-t">
-              {/* Dinheiro */}
-              {selectedPayment === 'dinheiro' && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-medium">Valor Recebido</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0,00"
-                      value={valorRecebido}
-                      onChange={(e) => setValorRecebido(e.target.value)}
-                      className="text-xl h-12 text-center font-bold mt-1"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 gap-1">
-                    {[10, 20, 50, 100].map((v) => (
-                      <Button key={v} variant="outline" size="sm" onClick={() => setValorRecebido(String(v))} className="text-xs h-8">
-                        R${v}
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-3 gap-1">
-                    <Button variant="outline" size="sm" onClick={() => setValorRecebido(String(total))} className="text-xs h-8">Exato</Button>
-                    <Button variant="outline" size="sm" onClick={() => setValorRecebido(String(Math.ceil(total / 10) * 10))} className="text-xs h-8">R${Math.ceil(total / 10) * 10}</Button>
-                    <Button variant="outline" size="sm" onClick={() => setValorRecebido('200')} className="text-xs h-8">R$200</Button>
-                  </div>
-                  {parseFloat(valorRecebido || '0') >= total && (
-                    <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-lg text-center">
-                      <p className="text-xs text-green-600">Troco</p>
-                      <p className="text-2xl font-bold text-green-600">{formatCurrency(troco)}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* PIX */}
-              {selectedPayment === 'pix' && (
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                  <QrCode className="h-12 w-12 text-teal-500 mb-3" />
-                  <p className="font-medium">Pagamento via PIX</p>
-                  <p className="text-sm text-muted-foreground mb-3">QR Code exibido na tela</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowPixModal(true)}
-                  >
-                    <QrCode className="h-4 w-4 mr-2" />
-                    Ver QR Code
-                  </Button>
-                </div>
-              )}
-
-              {/* Cartões */}
-              {(selectedPayment === 'cartao_credito' || selectedPayment === 'cartao_debito') && (
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                  <CreditCard className="h-12 w-12 text-muted-foreground mb-3" />
-                  <p className="font-medium">Aguardando maquininha</p>
-                  <p className="text-sm text-muted-foreground">
-                    Passe o cartão de {selectedPayment === 'cartao_credito' ? 'crédito' : 'débito'}
-                  </p>
-                </div>
-              )}
-
-              {/* Crediário */}
-              {selectedPayment === 'crediario' && !clienteSelecionado && (
-                <div className="text-center py-4">
-                  <Users className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-2">Selecione um cliente</p>
-                  <Button variant="outline" onClick={() => setShowClienteModal(true)}>
-                    <Users className="h-4 w-4 mr-2" />
-                    Selecionar Cliente
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Pagamento Combinado - Resumo */}
-          {combinedPayments && combinedPayments.length > 0 && items.length > 0 && (
-            <div className="p-3 border-t">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground uppercase">Pagamento Combinado</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 text-xs"
-                    onClick={() => setShowCombinedPaymentModal(true)}
-                  >
-                    Editar
-                  </Button>
-                </div>
-                <div className="space-y-1">
-                  {combinedPayments.map((p, idx) => {
-                    const labels: Record<string, string> = {
-                      dinheiro: 'Dinheiro',
-                      cartao_credito: 'Crédito',
-                      cartao_debito: 'Débito',
-                      pix: 'PIX',
-                      crediario: 'Fiado',
-                    }
-                    return (
-                      <div key={idx} className="flex justify-between text-sm">
-                        <span>{labels[p.forma] || p.forma}</span>
-                        <span className="font-medium">{formatCurrency(p.valor)}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-                {combinedValorRecebido && combinedPayments.some(p => p.forma === 'dinheiro') && (
-                  <div className="pt-2 border-t">
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Troco</span>
-                      <span className="font-bold">
-                        {formatCurrency(combinedValorRecebido - (combinedPayments.find(p => p.forma === 'dinheiro')?.valor || 0))}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* NFC-e */}
-          <div className="p-3 border-t">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Emitir NFC-e</span>
-              </div>
-              <Switch
-                checked={emitirNFCe}
-                onCheckedChange={setEmitirNFCe}
-                disabled={!fiscalConfigurado}
-              />
-            </div>
-            {!fiscalConfigurado && (
-              <Link href="/dashboard/fiscal/configuracoes" className="text-xs text-primary underline mt-1 block">
-                Configurar certificado
-              </Link>
-            )}
-            {emitirNFCe && fiscalConfigurado && (
-              <Input
-                placeholder="CPF na nota (opcional)"
-                value={cpfCliente}
-                onChange={(e) => setCpfCliente(e.target.value)}
-                className="h-8 text-xs mt-2"
-              />
-            )}
-          </div>
+          <NFCeToggle
+            emitirNFCe={emitirNFCe}
+            onEmitirNFCeChange={setEmitirNFCe}
+            fiscalConfigurado={fiscalConfigurado}
+            cpfCliente={cpfCliente}
+            onCpfClienteChange={setCpfCliente}
+          />
         </ScrollArea>
 
-        {/* Botão Confirmar Venda - Fixo no rodapé */}
-        <div className="border-t p-3 bg-background">
-          {paymentSuccess ? (
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-2">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <p className="font-bold text-green-700">Venda Finalizada!</p>
-              {selectedPayment === 'dinheiro' && troco > 0 && (
-                <p className="text-amber-600 font-bold">Troco: {formatCurrency(troco)}</p>
-              )}
-              {pontosGanhos !== null && pontosGanhos > 0 && (
-                <Badge className="bg-amber-100 text-amber-700 mt-1">
-                  <Star className="h-3 w-3 mr-1" />
-                  +{pontosGanhos} pontos
-                </Badge>
-              )}
-              <div className="flex gap-2 mt-3">
-                <Button onClick={imprimirCupom} className="flex-1 bg-green-600 hover:bg-green-700">
-                  <Printer className="h-4 w-4 mr-2" />
-                  Imprimir
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    clearCart()
-                    setPaymentSuccess(false)
-                    setSelectedPayment(null)
-                    setValorRecebido('')
-                    setNfceResult(null)
-                    setCpfCliente('')
-                    setVendaFinalizada(null)
-                    setClienteSelecionado(null)
-                    setCombinedPayments(null)
-                    setCombinedValorRecebido(undefined)
-                    setClientePontos(null)
-                    setUsarPontos(false)
-                    setPontosAUsar('')
-                    setPontosGanhos(null)
-                    searchRef.current?.focus()
-                  }}
-                >
-                  Nova Venda
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button
-              className="w-full h-14 text-lg"
-              disabled={items.length === 0 || (!selectedPayment && (!combinedPayments || combinedPayments.length === 0)) || paymentLoading || (selectedPayment === 'dinheiro' && troco < 0)}
-              onClick={finalizarVenda}
-            >
-              {paymentLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="mr-2 h-5 w-5" />
-                  Confirmar Venda (F4)
-                </>
-              )}
-            </Button>
-          )}
-        </div>
+        <ConfirmSaleFooter
+          paymentSuccess={paymentSuccess}
+          paymentLoading={paymentLoading}
+          canConfirm={canConfirmSale}
+          troco={troco}
+          selectedPayment={selectedPayment}
+          pontosGanhos={pontosGanhos}
+          onConfirm={finalizarVenda}
+          onPrint={imprimirCupom}
+          onNewSale={resetarVenda}
+        />
       </div>
 
-
-      {/* Modal de Pesagem - Produto por Peso */}
+      {/* Modals */}
       <WeightModal
         open={showWeightModal}
         onOpenChange={(open) => {
@@ -2019,58 +1522,21 @@ export default function PDVPage() {
         }}
       />
 
-      {/* Modal Exclusivo PIX */}
-      <Dialog open={showPixModal} onOpenChange={setShowPixModal}>
-        <DialogContent className="sm:max-w-md">
-          <div className="flex flex-col items-center py-4">
-            {/* Header */}
-            <div className="text-center mb-4">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-teal-100 rounded-full mb-2">
-                <QrCode className="h-6 w-6 text-teal-600" />
-              </div>
-              <DialogTitle className="text-xl">Pagamento via PIX</DialogTitle>
-              <p className="text-3xl font-bold text-primary mt-2">{formatCurrency(total)}</p>
-            </div>
+      <PixModal
+        open={showPixModal}
+        onOpenChange={setShowPixModal}
+        total={total}
+        empresa={empresa}
+        onConfirm={() => {
+          setShowPixModal(false)
+          finalizarVenda()
+        }}
+        onCancel={() => {
+          setShowPixModal(false)
+          setSelectedPayment(null)
+        }}
+      />
 
-            {/* QR Code */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border mb-4">
-              <PixQRCode
-                valor={total}
-                chavePix={empresa?.chavePix}
-                beneficiario={empresa?.nome}
-                cidade={empresa?.cidade}
-                txid={`PDV${Date.now()}`}
-              />
-            </div>
-
-            {/* Botões */}
-            <div className="flex gap-3 w-full">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setShowPixModal(false)
-                  setSelectedPayment(null)
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                className="flex-1 bg-teal-600 hover:bg-teal-700"
-                onClick={() => {
-                  setShowPixModal(false)
-                  finalizarVenda()
-                }}
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Recebido
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Seleção de Cliente (Crediário) */}
       <ClientModal
         open={showClienteModal}
         onOpenChange={setShowClienteModal}
@@ -2082,7 +1548,6 @@ export default function PDVPage() {
         onSelectClient={selecionarCliente}
       />
 
-      {/* Modal de Atalhos de Teclado */}
       <HelpModal
         open={showAjuda}
         onOpenChange={setShowAjuda}
@@ -2090,22 +1555,16 @@ export default function PDVPage() {
         showFidelidade={!!fidelidadeConfig}
       />
 
-      {/* Modal de Desconto */}
       <DiscountModal
         open={showDescontoModal}
         onOpenChange={setShowDescontoModal}
         config={configDesconto}
         subtotal={subtotal}
         item={itemDesconto || undefined}
-        onApplyDiscount={(valor, percentual, motivo) => {
-          setDescontoGeral({ valor, percentual, motivo })
-        }}
-        onApplyItemDiscount={(itemId, valor, percentual, motivo) => {
-          setDescontoItem(itemId, valor, percentual, motivo)
-        }}
+        onApplyDiscount={handleApplyDesconto}
+        onApplyItemDiscount={handleApplyItemDesconto}
       />
 
-      {/* Modal de Pagamento Combinado */}
       <PaymentCombinationModal
         open={showCombinedPaymentModal}
         onOpenChange={setShowCombinedPaymentModal}

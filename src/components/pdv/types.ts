@@ -93,6 +93,52 @@ export interface ItemDesconto {
   quantidade: number
 }
 
+export interface DescontoGeral {
+  valor: number
+  percentual: number
+  motivo?: string
+}
+
+export interface CartItem {
+  id: string
+  codigo: string
+  nome: string
+  preco: number
+  quantidade: number
+  unidade?: string
+  ncm?: string
+  desconto?: number
+  descontoPercentual?: number
+  descontoMotivo?: string
+}
+
+export type PaymentMethodId = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 'crediario' | 'combinado'
+
+export interface PaymentMethod {
+  id: PaymentMethodId
+  label: string
+  icon: string
+  key: string
+  color: string
+}
+
+export const PAYMENT_METHODS: Omit<PaymentMethod, 'icon'>[] = [
+  { id: 'dinheiro', label: 'Dinheiro', key: 'F6', color: 'green' },
+  { id: 'cartao_credito', label: 'Crédito', key: 'F7', color: 'blue' },
+  { id: 'cartao_debito', label: 'Débito', key: 'F8', color: 'indigo' },
+  { id: 'pix', label: 'PIX', key: 'F9', color: 'teal' },
+  { id: 'crediario', label: 'Fiado', key: 'F10', color: 'orange' },
+  { id: 'combinado', label: 'Combinado', key: 'F11', color: 'purple' },
+]
+
+export const PAYMENT_LABELS: Record<string, string> = {
+  dinheiro: 'Dinheiro',
+  cartao_credito: 'Crédito',
+  cartao_debito: 'Débito',
+  pix: 'PIX',
+  crediario: 'Fiado',
+}
+
 // Utilitarios
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
