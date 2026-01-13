@@ -9,6 +9,15 @@ export {
   OperacionalTab,
   DescontosTab,
   CrediarioTab,
+  ItensVendidosTab,
+  MaisVendidosTab,
+  CurvaABCTab,
+  ClientesTab,
+  EstoqueCriticoTab,
+  ProdutosTab,
+  SaudeTab,
+  FiscalTab,
+  FinanceiroTab,
 } from './tabs'
 
 // Types
