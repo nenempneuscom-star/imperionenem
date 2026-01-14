@@ -138,8 +138,9 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         className="receipt-container"
         style={{
           fontFamily: "'Courier New', Courier, monospace",
-          fontSize: largura === '58mm' ? '10px' : '12px',
-          lineHeight: 1.3,
+          fontSize: largura === '58mm' ? '12px' : '13px',
+          fontWeight: 600,
+          lineHeight: 1.4,
           width: largura,
           padding: '5mm',
           backgroundColor: 'white',
@@ -148,22 +149,22 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
       >
         {/* Header da Empresa */}
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <div style={{ fontWeight: 'bold', fontSize: largura === '58mm' ? '12px' : '14px' }}>
+          <div style={{ fontWeight: 900, fontSize: largura === '58mm' ? '14px' : '15px' }}>
             {truncate(empresa.nome, maxChars)}
           </div>
-          <div>CNPJ: {formatCNPJ(empresa.cnpj)}</div>
+          <div style={{ fontWeight: 800 }}>CNPJ: {formatCNPJ(empresa.cnpj)}</div>
           {empresa.endereco && (
-            <div style={{ fontSize: largura === '58mm' ? '9px' : '10px' }}>
+            <div style={{ fontSize: largura === '58mm' ? '10px' : '11px', fontWeight: 600 }}>
               {truncate(empresa.endereco, maxChars)}
             </div>
           )}
-          {empresa.telefone && <div>Tel: {empresa.telefone}</div>}
+          {empresa.telefone && <div style={{ fontWeight: 700 }}>Tel: {empresa.telefone}</div>}
         </div>
 
         <div>{separador}</div>
 
         {/* Tipo de documento */}
-        <div style={{ textAlign: 'center', fontWeight: 'bold' }}>
+        <div style={{ textAlign: 'center', fontWeight: 900 }}>
           {nfce?.chave ? 'NFC-e - DANFE' : 'CUPOM NAO FISCAL'}
         </div>
 
@@ -186,7 +187,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         <div>{separador}</div>
 
         {/* Header dos itens */}
-        <div style={{ fontWeight: 'bold' }}>
+        <div style={{ fontWeight: 900 }}>
           {largura === '58mm' ? (
             <>
               <div>ITEM DESCRICAO</div>
@@ -208,17 +209,17 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           <div key={index} style={{ marginBottom: '4px' }}>
             {largura === '58mm' ? (
               <>
-                <div>{String(index + 1).padStart(3, '0')} {truncate(item.nome, maxChars - 4)}</div>
-                <div style={{ textAlign: 'right' }}>
+                <div style={{ fontWeight: 800 }}>{String(index + 1).padStart(3, '0')} {truncate(item.nome, maxChars - 4)}</div>
+                <div style={{ textAlign: 'right', fontWeight: 700 }}>
                   {item.quantidade.toFixed(2)} x {formatCurrency(item.preco)} = {formatCurrency(item.total)}
                 </div>
               </>
             ) : (
               <>
-                <div>{String(index + 1).padStart(3, '0')} {truncate(item.nome, maxChars - 4)}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '20px' }}>
+                <div style={{ fontWeight: 800 }}>{String(index + 1).padStart(3, '0')} {truncate(item.nome, maxChars - 4)}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '20px', fontWeight: 700 }}>
                   <span>{item.quantidade.toFixed(2)} x {formatCurrency(item.preco)}</span>
-                  <span style={{ fontWeight: 'bold' }}>{formatCurrency(item.total)}</span>
+                  <span style={{ fontWeight: 900 }}>{formatCurrency(item.total)}</span>
                 </div>
               </>
             )}
@@ -228,13 +229,13 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         <div>{separador}</div>
 
         {/* Totais */}
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
           <span>SUBTOTAL:</span>
           <span>{formatCurrency(subtotal)}</span>
         </div>
 
         {desconto > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
             <span>DESCONTO:</span>
             <span>-{formatCurrency(desconto)}</span>
           </div>
@@ -243,8 +244,8 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
-          fontWeight: 'bold',
-          fontSize: largura === '58mm' ? '12px' : '14px',
+          fontWeight: 900,
+          fontSize: largura === '58mm' ? '14px' : '15px',
           marginTop: '4px',
         }}>
           <span>TOTAL:</span>
@@ -256,14 +257,15 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           <div style={{
             marginTop: '8px',
             padding: '4px',
-            backgroundColor: '#f5f5f5',
-            fontSize: largura === '58mm' ? '9px' : '10px',
+            border: '2px solid black',
+            fontSize: largura === '58mm' ? '10px' : '11px',
+            fontWeight: 700,
           }}>
-            <div style={{ fontWeight: 'bold' }}>
+            <div style={{ fontWeight: 800 }}>
               Val. Aprox. Tributos: {formatCurrency(valorTributos)}
               {percentualTributos !== undefined && ` (${percentualTributos.toFixed(2)}%)`}
             </div>
-            <div style={{ fontSize: largura === '58mm' ? '7px' : '8px' }}>
+            <div style={{ fontSize: largura === '58mm' ? '9px' : '10px', fontWeight: 600 }}>
               Fonte: IBPT - Lei 12.741/2012
             </div>
           </div>
@@ -272,16 +274,16 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         <div>{separador}</div>
 
         {/* Pagamentos */}
-        <div style={{ fontWeight: 'bold' }}>PAGAMENTO:</div>
+        <div style={{ fontWeight: 900 }}>PAGAMENTO:</div>
         {pagamentos.map((pag, index) => (
-          <div key={index} style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div key={index} style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
             <span>{formasPagamento[pag.forma] || pag.forma.toUpperCase()}</span>
             <span>{formatCurrency(pag.valor)}</span>
           </div>
         ))}
 
         {valorRecebido !== undefined && valorRecebido > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
             <span>Valor Recebido:</span>
             <span>{formatCurrency(valorRecebido)}</span>
           </div>
@@ -291,8 +293,8 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
-            fontWeight: 'bold',
-            fontSize: largura === '58mm' ? '12px' : '14px',
+            fontWeight: 900,
+            fontSize: largura === '58mm' ? '14px' : '15px',
           }}>
             <span>TROCO:</span>
             <span>{formatCurrency(troco)}</span>
@@ -303,11 +305,11 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         {nfce?.chave && (
           <>
             <div>{separador}</div>
-            <div style={{ textAlign: 'center', fontSize: largura === '58mm' ? '8px' : '9px' }}>
-              <div style={{ fontWeight: 'bold' }}>CHAVE DE ACESSO</div>
-              <div style={{ wordBreak: 'break-all' }}>{nfce.chave}</div>
+            <div style={{ textAlign: 'center', fontSize: largura === '58mm' ? '10px' : '11px', fontWeight: 600 }}>
+              <div style={{ fontWeight: 900 }}>CHAVE DE ACESSO</div>
+              <div style={{ wordBreak: 'break-all', fontWeight: 800 }}>{nfce.chave}</div>
               {nfce.protocolo && (
-                <div style={{ marginTop: '4px' }}>
+                <div style={{ marginTop: '4px', fontWeight: 800 }}>
                   Protocolo: {nfce.protocolo}
                 </div>
               )}
@@ -332,16 +334,16 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           </div>
         )}
 
-        {/* Rodapé */}
+        {/* Rodape */}
         <div style={{ textAlign: 'center', marginTop: '8px' }}>
           <div>{separador}</div>
-          <div style={{ fontWeight: 'bold', marginTop: '4px' }}>
+          <div style={{ fontWeight: 900, marginTop: '4px' }}>
             OBRIGADO PELA PREFERENCIA!
           </div>
-          <div style={{ fontSize: largura === '58mm' ? '8px' : '9px', marginTop: '4px' }}>
+          <div style={{ fontSize: largura === '58mm' ? '10px' : '11px', marginTop: '4px', fontWeight: 700 }}>
             Volte sempre!
           </div>
-          <div style={{ fontSize: largura === '58mm' ? '7px' : '8px', marginTop: '8px' }}>
+          <div style={{ fontSize: largura === '58mm' ? '9px' : '10px', marginTop: '8px', fontWeight: 700 }}>
             Imperio Sistemas
           </div>
         </div>
@@ -378,9 +380,10 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
 
   const maxChars = largura === '58mm' ? 32 : 42
   const separador = '-'.repeat(maxChars)
-  const fontSize = largura === '58mm' ? '10px' : '11px'
-  const fontSizeSmall = largura === '58mm' ? '8px' : '9px'
-  const fontSizeLarge = largura === '58mm' ? '12px' : '13px'
+  // Fontes maiores e mais pesadas para impressora termica
+  const fontSize = largura === '58mm' ? '12px' : '13px'
+  const fontSizeSmall = largura === '58mm' ? '10px' : '11px'
+  const fontSizeLarge = largura === '58mm' ? '14px' : '15px'
 
   function truncate(text: string, max: number): string {
     return text.length > max ? text.substring(0, max - 1) + '.' : text
@@ -446,8 +449,8 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
         body {
           font-family: 'Courier New', Courier, monospace;
           font-size: ${fontSize};
-          font-weight: 500;
-          line-height: 1.3;
+          font-weight: 600;
+          line-height: 1.4;
           width: ${largura};
           padding: 2mm 4mm;
           margin: 0 auto;
@@ -457,25 +460,26 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
           text-rendering: geometricPrecision;
         }
 
-        /* Classes de texto */
+        /* Classes de texto - pesos fortes para impressora termica */
         .center { text-align: center; }
-        .bold { font-weight: 700 !important; }
+        .bold { font-weight: 800 !important; }
         .extra-bold { font-weight: 900 !important; }
-        .separator { margin: 2px 0; font-weight: 700; letter-spacing: -1px; }
+        .separator { margin: 3px 0; font-weight: 800; letter-spacing: -1px; }
         .flex { display: flex; justify-content: space-between; }
-        .small { font-size: ${fontSizeSmall}; }
-        .large { font-size: ${fontSizeLarge}; font-weight: 700; }
-        .item { margin-bottom: 2px; }
-        .item-detail { padding-left: 12px; }
+        .small { font-size: ${fontSizeSmall}; font-weight: 600; }
+        .large { font-size: ${fontSizeLarge}; font-weight: 900; }
+        .item { margin-bottom: 3px; }
+        .item-detail { padding-left: 12px; font-weight: 700; }
         .break-all { word-break: break-all; }
 
         /* Secao cliente */
         .cliente-info {
           margin: 4px 0;
           font-size: ${fontSizeSmall};
+          font-weight: 600;
         }
         .cliente-info div {
-          margin: 1px 0;
+          margin: 2px 0;
         }
 
         /* QR Code placeholder */
@@ -490,9 +494,10 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
         /* Tributos */
         .tributos {
           margin-top: 4px;
-          padding: 3px;
-          border: 1px solid #000000;
+          padding: 4px;
+          border: 2px solid #000000;
           font-size: ${fontSizeSmall};
+          font-weight: 700;
         }
 
         /* Garantir que linhas horizontais apareçam */
