@@ -93,10 +93,10 @@ interface Venda {
 
 const formasPagamentoLabel: Record<string, string> = {
   dinheiro: 'Dinheiro',
-  cartao_credito: 'Cartao Credito',
-  cartao_debito: 'Cartao Debito',
+  cartao_credito: 'Cartão Crédito',
+  cartao_debito: 'Cartão Débito',
   pix: 'PIX',
-  crediario: 'Crediario',
+  crediario: 'Crediário',
 }
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -209,7 +209,7 @@ export default function VendasPage() {
   async function handleCancelarVenda() {
     if (!vendaSelecionada) return
     if (motivoCancelamento.length < 10) {
-      toast.error('Motivo deve ter no minimo 10 caracteres')
+      toast.error('Motivo deve ter no mínimo 10 caracteres')
       return
     }
 
@@ -247,7 +247,7 @@ export default function VendasPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Historico de Vendas</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Histórico de Vendas</h1>
           <p className="text-muted-foreground">
             Visualize e gerencie todas as vendas realizadas
           </p>
@@ -263,7 +263,7 @@ export default function VendasPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalVendas}</div>
-            <p className="text-xs text-muted-foreground">no periodo selecionado</p>
+            <p className="text-xs text-muted-foreground">no período selecionado</p>
           </CardContent>
         </Card>
 
@@ -280,7 +280,7 @@ export default function VendasPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ticket Medio</CardTitle>
+            <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -300,7 +300,7 @@ export default function VendasPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">{vendasCanceladas}</div>
-            <p className="text-xs text-muted-foreground">no periodo</p>
+            <p className="text-xs text-muted-foreground">no período</p>
           </CardContent>
         </Card>
       </div>
@@ -320,7 +320,7 @@ export default function VendasPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Numero, cliente..."
+                  placeholder="Número, cliente..."
                   className="pl-10"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -329,7 +329,7 @@ export default function VendasPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Data Inicio</Label>
+              <Label>Data Início</Label>
               <Input
                 type="date"
                 value={dataInicio}
@@ -383,7 +383,7 @@ export default function VendasPage() {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          <strong>Como cancelar vendas:</strong> Vendas <strong>sem nota fiscal</strong> podem ser canceladas diretamente nesta tela (botao X vermelho).
+          <strong>Como cancelar vendas:</strong> Vendas <strong>sem nota fiscal</strong> podem ser canceladas diretamente nesta tela (botão X vermelho).
           Vendas com <strong>NFC-e ou NF-e</strong> devem ser canceladas em{' '}
           <a href="/dashboard/fiscal/nfce" className="text-primary underline font-medium">
             Fiscal &gt; NFC-e
@@ -416,14 +416,14 @@ export default function VendasPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Numero</TableHead>
+                    <TableHead>Número</TableHead>
                     <TableHead>Data/Hora</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Documento</TableHead>
                     <TableHead>Pagamento</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Acoes</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -489,11 +489,11 @@ export default function VendasPage() {
                 </TableBody>
               </Table>
 
-              {/* Paginacao */}
+              {/* Paginação */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-muted-foreground">
-                    Pagina {page} de {totalPages} ({totalVendas} vendas)
+                    Página {page} de {totalPages} ({totalVendas} vendas)
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -511,7 +511,7 @@ export default function VendasPage() {
                       disabled={page === totalPages}
                       onClick={() => setPage(page + 1)}
                     >
-                      Proxima
+                      Próxima
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -542,7 +542,7 @@ export default function VendasPage() {
                 <div>
                   <Label className="text-muted-foreground">Cliente</Label>
                   <p className="font-medium">
-                    {vendaSelecionada.cliente?.nome || 'Nao identificado'}
+                    {vendaSelecionada.cliente?.nome || 'Não identificado'}
                   </p>
                 </div>
                 <div>
@@ -634,10 +634,10 @@ export default function VendasPage() {
                 </div>
               </div>
 
-              {/* Observacao */}
+              {/* Observação */}
               {vendaSelecionada.observacao && (
                 <div>
-                  <Label className="text-muted-foreground">Observacao</Label>
+                  <Label className="text-muted-foreground">Observação</Label>
                   <p className="text-sm mt-1">{vendaSelecionada.observacao}</p>
                 </div>
               )}
@@ -661,18 +661,18 @@ export default function VendasPage() {
               Cancelar Venda #{vendaSelecionada?.numero}
             </DialogTitle>
             <DialogDescription>
-              Esta acao ira reverter o estoque, caixa e crediario (se aplicavel).
+              Esta ação irá reverter o estoque, caixa e crediário (se aplicável).
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="p-4 bg-destructive/10 rounded-lg text-sm">
-              <p className="font-medium text-destructive">Atencao!</p>
+              <p className="font-medium text-destructive">Atenção!</p>
               <ul className="mt-2 space-y-1 text-muted-foreground">
-                <li>• Estoque dos produtos sera restaurado</li>
-                <li>• Movimento de saida sera registrado no caixa</li>
-                <li>• Saldo devedor do cliente sera estornado (se crediario)</li>
-                <li>• Pontos fidelidade serao revertidos</li>
+                <li>• Estoque dos produtos será restaurado</li>
+                <li>• Movimento de saída será registrado no caixa</li>
+                <li>• Saldo devedor do cliente será estornado (se crediário)</li>
+                <li>• Pontos fidelidade serão revertidos</li>
               </ul>
             </div>
 
@@ -680,13 +680,13 @@ export default function VendasPage() {
               <Label htmlFor="motivo">Motivo do Cancelamento *</Label>
               <Textarea
                 id="motivo"
-                placeholder="Informe o motivo do cancelamento (minimo 10 caracteres)"
+                placeholder="Informe o motivo do cancelamento (mínimo 10 caracteres)"
                 value={motivoCancelamento}
                 onChange={(e) => setMotivoCancelamento(e.target.value)}
                 rows={3}
               />
               <p className="text-xs text-muted-foreground">
-                {motivoCancelamento.length}/10 caracteres minimos
+                {motivoCancelamento.length}/10 caracteres mínimos
               </p>
             </div>
           </div>

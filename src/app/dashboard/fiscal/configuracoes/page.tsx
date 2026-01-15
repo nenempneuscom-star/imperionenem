@@ -107,7 +107,7 @@ export default function ConfiguracoesFiscaisPage() {
         })
       }
     } catch (error) {
-      toast.error('Erro ao carregar configuracoes')
+      toast.error('Erro ao carregar configurações')
     } finally {
       setLoading(false)
     }
@@ -160,9 +160,9 @@ export default function ConfiguracoesFiscaisPage() {
       if (error) throw error
 
       setEmpresa(prev => prev ? { ...prev, config_fiscal } : null)
-      toast.success('Configuracoes salvas com sucesso!')
+      toast.success('Configurações salvas com sucesso!')
     } catch (error: any) {
-      toast.error('Erro ao salvar configuracoes', {
+      toast.error('Erro ao salvar configurações', {
         description: error.message,
       })
     } finally {
@@ -250,7 +250,7 @@ export default function ConfiguracoesFiscaisPage() {
         } else if (data.nfce?.online || data.nfe?.online) {
           toast.warning('SEFAZ parcialmente online')
         } else {
-          toast.error('SEFAZ offline ou erro de conexao')
+          toast.error('SEFAZ offline ou erro de conexão')
         }
       } else {
         toast.error('Erro ao consultar status', {
@@ -278,9 +278,9 @@ export default function ConfiguracoesFiscaisPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Configuracoes Fiscais</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Configurações Fiscais</h1>
           <p className="text-muted-foreground">
-            Configure os parametros para emissao de NFC-e e NF-e
+            Configure os parâmetros para emissão de NFC-e e NF-e
           </p>
         </div>
         <Button
@@ -293,7 +293,7 @@ export default function ConfiguracoesFiscaisPage() {
           ) : (
             <RefreshCw className="mr-2 h-4 w-4" />
           )}
-          Testar Conexao SEFAZ
+          Testar Conexão SEFAZ
         </Button>
       </div>
 
@@ -401,7 +401,7 @@ export default function ConfiguracoesFiscaisPage() {
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                Salvar Configuracoes
+                Salvar Configurações
               </>
             )}
           </Button>

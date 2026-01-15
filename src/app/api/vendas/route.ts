@@ -6,13 +6,13 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Verifica autenticacao
+    // Verifica autenticação
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
-    // Busca dados do usuario e empresa
+    // Busca dados do usuário e empresa
     const { data: userData } = await supabase
       .from('usuarios')
       .select('empresa_id')
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!userData?.empresa_id) {
-      return NextResponse.json({ error: 'Empresa nao encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 })
     }
 
     // Parametros de filtro

@@ -97,8 +97,8 @@ function formatCPF(cpf: string): string {
 // Mapa de formas de pagamento
 const formasPagamento: Record<string, string> = {
   dinheiro: 'DINHEIRO',
-  cartao_credito: 'CARTAO CREDITO',
-  cartao_debito: 'CARTAO DEBITO',
+  cartao_credito: 'CARTÃO CRÉDITO',
+  cartao_debito: 'CARTÃO DÉBITO',
   pix: 'PIX',
 }
 
@@ -166,7 +166,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
 
         {/* Tipo de documento */}
         <div style={{ textAlign: 'center', fontWeight: 900 }}>
-          {nfce?.chave ? 'NFC-e - DANFE' : 'CUPOM NAO FISCAL'}
+          {nfce?.chave ? 'NFC-e - DANFE' : 'CUPOM NÃO FISCAL'}
         </div>
 
         <div>{separador}</div>
@@ -191,7 +191,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         <div style={{ fontWeight: 900 }}>
           {largura === '58mm' ? (
             <>
-              <div>ITEM DESCRICAO</div>
+              <div>ITEM DESCRIÇÃO</div>
               <div>QTD x VALOR = TOTAL</div>
             </>
           ) : (
@@ -335,11 +335,11 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           </div>
         )}
 
-        {/* Rodape */}
+        {/* Rodapé */}
         <div style={{ textAlign: 'center', marginTop: '8px' }}>
           <div>{separador}</div>
           <div style={{ fontWeight: 900, marginTop: '4px' }}>
-            OBRIGADO PELA PREFERENCIA!
+            OBRIGADO PELA PREFERÊNCIA!
           </div>
           <div style={{ fontSize: largura === '58mm' ? '10px' : '11px', marginTop: '4px', fontWeight: 700 }}>
             Volte sempre!
@@ -522,7 +522,7 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
 
       <div class="separator bold">${separador}</div>
 
-      <div class="center extra-bold">${nfce?.chave ? 'NFC-e - DANFE' : 'CUPOM NAO FISCAL'}</div>
+      <div class="center extra-bold">${nfce?.chave ? 'NFC-e - DANFE' : 'CUPOM NÃO FISCAL'}</div>
 
       <div class="separator bold">${separador}</div>
 
@@ -549,7 +549,7 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
       <!-- Header itens -->
       <div class="extra-bold">
         ${largura === '58mm'
-          ? '<div>ITEM DESCRICAO</div><div>QTD x VALOR = TOTAL</div>'
+          ? '<div>ITEM DESCRIÇÃO</div><div>QTD x VALOR = TOTAL</div>'
           : '<div class="flex"><span>ITEM</span><span>QTD x VALOR</span><span>TOTAL</span></div>'
         }
       </div>
@@ -631,9 +631,9 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
 
       <div class="separator bold">${separador}</div>
 
-      <!-- Rodape -->
+      <!-- Rodapé -->
       <div class="center">
-        <div class="extra-bold" style="margin-top: 3px;">OBRIGADO PELA PREFERENCIA!</div>
+        <div class="extra-bold" style="margin-top: 3px;">OBRIGADO PELA PREFERÊNCIA!</div>
         <div class="bold small" style="margin-top: 3px;">Volte sempre!</div>
         <div class="bold" style="font-size: 8px; margin-top: 6px;">Imperio Sistemas</div>
       </div>

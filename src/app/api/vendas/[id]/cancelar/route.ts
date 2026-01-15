@@ -10,13 +10,13 @@ export async function POST(
     const { id: vendaId } = await params
     const supabase = await createClient()
 
-    // Verifica autenticacao
+    // Verifica autenticação
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
-    // Busca dados do usuario e empresa
+    // Busca dados do usuário e empresa
     const { data: userData } = await supabase
       .from('usuarios')
       .select('empresa_id, id')
@@ -24,7 +24,7 @@ export async function POST(
       .single()
 
     if (!userData?.empresa_id) {
-      return NextResponse.json({ error: 'Empresa nao encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 })
     }
 
     // Dados do cancelamento
@@ -33,7 +33,7 @@ export async function POST(
 
     if (!motivo || motivo.length < 10) {
       return NextResponse.json(
-        { error: 'Motivo do cancelamento obrigatorio (minimo 10 caracteres)' },
+        { error: 'Motivo do cancelamento obrigatório (mínimo 10 caracteres)' },
         { status: 400 }
       )
     }
@@ -51,11 +51,11 @@ export async function POST(
       .single()
 
     if (vendaError || !venda) {
-      return NextResponse.json({ error: 'Venda nao encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Venda não encontrada' }, { status: 404 })
     }
 
     if (venda.status === 'cancelada') {
-      return NextResponse.json({ error: 'Venda ja esta cancelada' }, { status: 400 })
+      return NextResponse.json({ error: 'Venda já está cancelada' }, { status: 400 })
     }
 
     // Verifica se tem NFC-e/NF-e vinculada
