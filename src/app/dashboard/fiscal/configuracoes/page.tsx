@@ -129,8 +129,17 @@ export default function ConfiguracoesFiscaisPage() {
     setSaving(true)
 
     try {
+      // Buscar config_fiscal atualizado do banco para nao perder o certificado
+      const { data: empresaAtual } = await supabase
+        .from('empresas')
+        .select('config_fiscal')
+        .eq('id', empresa.id)
+        .single()
+
+      const configAtual = empresaAtual?.config_fiscal || {}
+
       const config_fiscal: ConfigFiscal = {
-        ...(empresa.config_fiscal || {}),
+        ...configAtual,
         crt: parseInt(formData.crt) || 1,
         ambiente: parseInt(formData.ambiente) as 1 | 2,
         serie_nfce: parseInt(formData.serie_nfce) || 1,
