@@ -45,7 +45,10 @@ import {
   Package,
   ChevronLeft,
   ChevronRight,
+  Info,
+  FileText,
 } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'sonner'
 
 interface Venda {
@@ -375,6 +378,23 @@ export default function VendasPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Legenda sobre cancelamento */}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Como cancelar vendas:</strong> Vendas <strong>sem nota fiscal</strong> podem ser canceladas diretamente nesta tela (botao X vermelho).
+          Vendas com <strong>NFC-e ou NF-e</strong> devem ser canceladas em{' '}
+          <a href="/dashboard/fiscal/nfce" className="text-primary underline font-medium">
+            Fiscal &gt; NFC-e
+          </a>{' '}
+          ou{' '}
+          <a href="/dashboard/fiscal/nfe" className="text-primary underline font-medium">
+            Fiscal &gt; NF-e
+          </a>{' '}
+          para garantir o cancelamento junto a SEFAZ.
+        </AlertDescription>
+      </Alert>
 
       {/* Tabela de Vendas */}
       <Card>
