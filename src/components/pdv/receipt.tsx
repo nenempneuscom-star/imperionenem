@@ -145,6 +145,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           padding: '5mm',
           backgroundColor: 'white',
           color: 'black',
+          textTransform: 'uppercase',
         }}
       >
         {/* Header da Empresa */}
@@ -458,6 +459,7 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
           color: #000000;
           -webkit-font-smoothing: none;
           text-rendering: geometricPrecision;
+          text-transform: uppercase;
         }
 
         /* Classes de texto - pesos fortes para impressora termica */
