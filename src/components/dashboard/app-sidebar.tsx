@@ -62,6 +62,7 @@ const menuItems = [
   {
     title: 'Operações',
     items: [
+      { title: 'Vendas', href: '/dashboard/vendas', icon: ShoppingCart },
       { title: 'Estoque', href: '/dashboard/estoque', icon: Boxes },
     ],
   },
