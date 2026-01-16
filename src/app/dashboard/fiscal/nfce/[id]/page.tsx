@@ -195,7 +195,7 @@ export default function NFCeDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2 sm:gap-4">
@@ -386,8 +386,8 @@ export default function NFCeDetailPage({ params }: { params: Promise<{ id: strin
             <CardTitle className="text-base sm:text-lg">XML da Nota</CardTitle>
             <CardDescription className="text-xs sm:text-sm">Visualizacao do XML da NFC-e</CardDescription>
           </CardHeader>
-          <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
-            <pre className="bg-muted p-2 sm:p-4 rounded-lg overflow-x-auto text-[10px] sm:text-xs max-h-[300px] sm:max-h-[400px] overflow-y-auto">
+          <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 overflow-hidden">
+            <pre className="bg-muted p-2 sm:p-4 rounded-lg text-[10px] sm:text-xs max-h-[300px] sm:max-h-[400px] overflow-auto whitespace-pre-wrap break-all">
               {nota.xml}
             </pre>
           </CardContent>
