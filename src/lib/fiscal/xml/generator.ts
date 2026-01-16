@@ -13,8 +13,9 @@ const VERSAO_NFE = '4.00'
 
 /**
  * Gera XML de NFC-e
+ * Retorna também os dados suplementares (QR Code) para serem adicionados APÓS a assinatura
  */
-export function gerarXMLNFCe(dados: NFCeData): { xml: string; chave: string } {
+export function gerarXMLNFCe(dados: NFCeData): { xml: string; chave: string; infNFeSupl: string } {
   const codigoNumerico = gerarCodigoNumerico()
 
   // Gera chave de acesso
@@ -42,16 +43,19 @@ export function gerarXMLNFCe(dados: NFCeData): { xml: string; chave: string } {
     ? 'https://sat.sef.sc.gov.br/nfce/consulta'
     : 'https://sat-h.sef.sc.gov.br/nfce/consulta'
 
+  // Gera XML SEM infNFeSupl (será adicionado após assinatura)
   const xml = gerarXMLBase({
     ...dados,
     chave,
     codigoNumerico,
     modelo: '65',
-    urlQRCode,
-    urlConsulta,
+    // NÃO passa urlQRCode para não incluir infNFeSupl no XML base
   })
 
-  return { xml, chave }
+  // Gera infNFeSupl separadamente para ser adicionado APÓS a assinatura
+  const infNFeSupl = `<infNFeSupl><qrCode><![CDATA[${urlQRCode}]]></qrCode><urlChave>${urlConsulta}</urlChave></infNFeSupl>`
+
+  return { xml, chave, infNFeSupl }
 }
 
 /**
@@ -297,13 +301,9 @@ function gerarXMLBase(dados: any): string {
     infAdic.ele('infCpl').txt(truncar(dados.informacoesAdicionais, 5000))
   }
 
-  // NFC-e: QR Code
-  if (isNFCe && dados.urlQRCode) {
-    const infNFeSupl = doc.up().ele('infNFeSupl')
-    // Usa .dat() para inserir como CDATA corretamente
-    infNFeSupl.ele('qrCode').dat(dados.urlQRCode)
-    infNFeSupl.ele('urlChave').txt(dados.urlConsulta)
-  }
+  // NOTA: infNFeSupl (QR Code) é adicionado APÓS a assinatura no fluxo de emissão
+  // Não deve ser incluído aqui para manter a ordem correta do XML:
+  // infNFe -> Signature -> infNFeSupl
 
   return doc.end({ prettyPrint: false })
 }

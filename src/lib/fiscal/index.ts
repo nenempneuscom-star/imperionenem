@@ -68,15 +68,19 @@ export class ServicoFiscal {
         csc: this.config.cscNFCe,
       }
 
-      // Gera XML
-      const { xml, chave } = gerarXMLNFCe(dadosCompletos)
+      // Gera XML (retorna também infNFeSupl separado)
+      const { xml, chave, infNFeSupl } = gerarXMLNFCe(dadosCompletos)
 
       // Assina XML
       const xmlAssinado = assinarXMLManual(xml, this.certificado)
 
+      // Adiciona infNFeSupl APÓS a assinatura, antes do fechamento de </NFe>
+      // Estrutura correta: <NFe><infNFe>...</infNFe><Signature>...</Signature><infNFeSupl>...</infNFeSupl></NFe>
+      const xmlComQRCode = xmlAssinado.replace('</NFe>', `${infNFeSupl}</NFe>`)
+
       // Envia para SEFAZ
       const retorno = await enviarParaSEFAZ({
-        xmlAssinado,
+        xmlAssinado: xmlComQRCode,
         certificado: this.certificado,
         uf: this.config.uf,
         ambiente: this.config.ambiente,
@@ -92,7 +96,7 @@ export class ServicoFiscal {
         sucesso: retorno.sucesso,
         chave: retorno.chave || chave,
         protocolo: retorno.protocolo,
-        xml: xmlAssinado,
+        xml: xmlComQRCode,
         mensagem: retorno.mensagem,
         codigo: retorno.codigo,
       }
