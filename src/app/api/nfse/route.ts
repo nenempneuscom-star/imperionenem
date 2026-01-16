@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
         numero: enderecoEmpresa.numero || '',
         complemento: enderecoEmpresa.complemento || '',
         bairro: enderecoEmpresa.bairro || '',
-        codigoMunicipio: config.codigo_municipio || '4203907',
+        codigoMunicipio: config.codigo_municipio || '4203709',
         uf: config.uf || 'SC',
         cep: enderecoEmpresa.cep || '',
       },
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
         numero: enderecoTomador.numero || '',
         complemento: enderecoTomador.complemento || '',
         bairro: enderecoTomador.bairro || '',
-        codigoMunicipio: enderecoTomador.codigo_municipio || '4203907',
+        codigoMunicipio: enderecoTomador.codigo_municipio || '4203709',
         uf: enderecoTomador.uf || 'SC',
         cep: enderecoTomador.cep || '',
       } : undefined,
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
       codigoTributacao: body.codigo_tributacao || body.item_lista_servico,
       discriminacao: body.discriminacao,
       codigoCnae: body.codigo_cnae || '',
-      codigoMunicipio: body.local_prestacao_codigo_municipio || config.codigo_municipio || '4203907',
+      codigoMunicipio: body.local_prestacao_codigo_municipio || config.codigo_municipio || '4203709',
     };
 
     const rps: RPS = {
@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
         regime_especial: config.regime_tributacao || '6',
         optante_simples_nacional: config.optante_simples_nacional ?? true,
         incentivador_cultural: config.incentivador_cultural ?? false,
-        local_prestacao_codigo_municipio: body.local_prestacao_codigo_municipio || config.codigo_municipio || '4203907',
+        local_prestacao_codigo_municipio: body.local_prestacao_codigo_municipio || config.codigo_municipio || '4203709',
         local_prestacao_uf: body.local_prestacao_uf || config.uf || 'SC',
         status: body.status || 'rascunho',
         xml_rps: xmlRps,

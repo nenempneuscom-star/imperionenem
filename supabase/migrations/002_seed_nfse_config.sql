@@ -26,7 +26,7 @@ INSERT INTO config_nfse (
   (SELECT id FROM empresas LIMIT 1),
   'homologacao', -- Ambiente de testes
   '12345', -- Inscricao municipal (altere conforme necessario)
-  '4203907', -- Codigo IBGE de Chapeco/SC (altere conforme sua cidade)
+  '4203709', -- Codigo IBGE de Capivari de Baixo/SC
   'SC', -- UF
   'NFSE', -- Serie do RPS
   1, -- Proximo numero RPS

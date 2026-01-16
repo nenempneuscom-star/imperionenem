@@ -100,7 +100,7 @@ export const ENDERECO_PADRAO: EnderecoTomador = {
   numero: '',
   complemento: '',
   bairro: '',
-  codigo_municipio: '4203907', // Capivari de Baixo
+  codigo_municipio: '4203709', // Capivari de Baixo
   uf: 'SC',
   cep: '',
 }
@@ -142,7 +142,7 @@ export const FORM_DATA_INICIAL: NFSeFormData = {
   // Outros
   data_competencia: new Date().toISOString().split('T')[0],
   natureza_operacao: '1',
-  local_prestacao_codigo_municipio: '4203907',
+  local_prestacao_codigo_municipio: '4203709',
   local_prestacao_uf: 'SC',
   // ADN
   usar_adn: true, // Padrao para usar o ADN nacional

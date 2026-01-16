@@ -54,7 +54,7 @@ export const CST_IBS_CBS = {
 
 // Codigos de municipio IBGE - SC (principais)
 export const MUNICIPIOS_SC_IBGE = {
-  CAPIVARI_DE_BAIXO: '4203907',
+  CAPIVARI_DE_BAIXO: '4203709',
   TUBARAO: '4218202',
   LAGUNA: '4209409',
   IMBITUBA: '4207007',

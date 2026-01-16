@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Plus, Search, FileText, Download, Eye, XCircle, FileCode } from 'lucide-react';
+import { Plus, Search, FileText, Download, Eye, XCircle, FileCode, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -278,6 +279,16 @@ export default function NFSePage() {
                     <TableCell>{getStatusBadge(nfse.status)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Ver Detalhes"
+                          asChild
+                        >
+                          <Link href={`/dashboard/fiscal/nfse/${nfse.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

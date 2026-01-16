@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS config_nfse (
 
   -- Dados do prestador
   inscricao_municipal VARCHAR(30),
-  codigo_municipio VARCHAR(10) DEFAULT '4203907', -- Chapeco/SC
+  codigo_municipio VARCHAR(10) DEFAULT '4203709', -- Capivari de Baixo/SC
   uf VARCHAR(2) DEFAULT 'SC',
 
   -- Serie e numeracao RPS

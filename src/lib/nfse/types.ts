@@ -112,7 +112,7 @@ export interface RetornoNFSe {
 
 // Códigos de Município IBGE - Santa Catarina
 export const MUNICIPIOS_SC = {
-  'CAPIVARI_DE_BAIXO': '4203907',
+  'CAPIVARI_DE_BAIXO': '4203709',
   'TUBARAO': '4218202',
   'LAGUNA': '4209409',
   'IMBITUBA': '4207007',

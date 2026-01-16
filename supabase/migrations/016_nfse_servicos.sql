@@ -107,7 +107,7 @@ CREATE TABLE nfse (
     incentivador_cultural BOOLEAN DEFAULT false,
 
     -- Local de Prestação
-    local_prestacao_codigo_municipio VARCHAR(10) DEFAULT '4203907', -- Capivari de Baixo
+    local_prestacao_codigo_municipio VARCHAR(10) DEFAULT '4203709', -- Capivari de Baixo
     local_prestacao_uf VARCHAR(2) DEFAULT 'SC',
 
     -- Status e Controle
@@ -144,7 +144,7 @@ CREATE TABLE config_nfse (
 
     -- Dados do Prestador
     inscricao_municipal VARCHAR(20),
-    codigo_municipio VARCHAR(10) DEFAULT '4203907', -- Capivari de Baixo
+    codigo_municipio VARCHAR(10) DEFAULT '4203709', -- Capivari de Baixo
     uf VARCHAR(2) DEFAULT 'SC',
 
     -- Regime Tributário
