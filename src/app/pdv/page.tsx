@@ -1008,10 +1008,11 @@ export default function PDVPage() {
                   produtos: items.map((item) => ({
                     codigo: item.codigo,
                     nome: item.nome,
+                    ncm: item.ncm,
                     quantidade: item.quantidade,
                     preco_unitario: item.preco,
                     total: item.preco * item.quantidade,
-                    unidade: 'UN',
+                    unidade: item.unidade || 'UN',
                   })),
                   pagamentos: pagamentosFinais.map(p => ({
                     forma: formasPagamentoFiscal[p.forma] || '01',
