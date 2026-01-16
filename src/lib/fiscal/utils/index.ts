@@ -143,13 +143,15 @@ export function gerarHashQRCode(
 
 /**
  * URLs de QR Code por UF
- * SC usa portal SAT próprio para produção, SVRS para homologação
- * Referência: https://www.sef.sc.gov.br/servicos/assunto/57/NFC-e
+ * SC usa SVRS como autorizador, mas tem portal SAT próprio para consulta
+ * IMPORTANTE: Testar com URLs do SVRS se SAT não funcionar
+ * Referência: http://www.sef.sc.gov.br/arquivos_portal/servicos/136/WEBSERVICE_DA_NFC_E_URL_DO_QR_CODE_E_DA_CONSULTA_EM_SC.pdf
  */
 const URLS_QRCODE: Record<string, { producao: string; homologacao: string }> = {
   'SC': {
-    producao: 'https://sat.sef.sc.gov.br/nfce/qrcode',
-    homologacao: 'https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx',
+    // URLs oficiais do SAT SC conforme documento SEF/SC
+    producao: 'https://sat.sef.sc.gov.br/nfce/consulta',
+    homologacao: 'https://hom.sat.sef.sc.gov.br/nfce/consulta',
   },
   'RS': {
     producao: 'https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx',
@@ -160,12 +162,13 @@ const URLS_QRCODE: Record<string, { producao: string; homologacao: string }> = {
 
 /**
  * URLs de Consulta por Chave (urlChave) por UF
- * SC usa portal SAT próprio para produção
+ * SC usa portal SAT próprio para consulta
  */
 const URLS_CONSULTA: Record<string, { producao: string; homologacao: string }> = {
   'SC': {
+    // URLs oficiais do SAT SC
     producao: 'https://sat.sef.sc.gov.br/nfce/consulta',
-    homologacao: 'https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx',
+    homologacao: 'https://hom.sat.sef.sc.gov.br/nfce/consulta',
   },
   'RS': {
     producao: 'https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx',
@@ -175,8 +178,14 @@ const URLS_CONSULTA: Record<string, { producao: string; homologacao: string }> =
 
 /**
  * Gera URL do QR Code NFC-e
- * Formato: URL?p=chave|versaoQRCode|tipoAmbiente|idCSC|hash
- * Referência: NT 2019.001 e Manual de Orientação do Contribuinte
+ *
+ * VERSÃO 2.0 (NT 2019.001) - Mantido para compatibilidade com schema minLength=100
+ * Formato: URL?p=chave|2|ambiente|idCSC|hash
+ *
+ * NOTA: QR Code v3 (NT 2025.001) gera URL de ~94 chars, mas schema SVRS ainda
+ * exige minLength=100 para o elemento qrCode. Mantendo v2 até atualização.
+ *
+ * Referência: NT 2019.001
  */
 export function gerarURLQRCode(params: {
   chave: string
@@ -187,16 +196,19 @@ export function gerarURLQRCode(params: {
 }): string {
   const { chave, ambiente, csc, idToken, uf = 'SC' } = params
 
-  // Gera hash SHA1: chave|2|tipoAmbiente|idCSC|CSC
-  const dadosHash = `${chave}|2|${ambiente}|${idToken}|${csc}`
-  const hash = crypto.createHash('sha1').update(dadosHash).digest('hex').toUpperCase()
-
   // URL base conforme UF e ambiente
   const urls = URLS_QRCODE[uf] || URLS_QRCODE['SC']
   const baseUrl = ambiente === 1 ? urls.producao : urls.homologacao
 
-  // Monta URL completa: chave|versaoQR|tipoAmb|idCSC|hash
-  const url = `${baseUrl}?p=${chave}|2|${ambiente}|${idToken}|${hash}`
+  // QR Code Versão 2.0 - Gera URL >100 chars (necessário para schema SVRS)
+  // Sequência para URL e hash: chave|2|ambiente|idToken
+  const seq = `${chave}|2|${ambiente}|${idToken}`
+
+  // Hash: SHA1(sequência + CSC) - CSC exatamente como cadastrado na SEFAZ
+  const hash = crypto.createHash('sha1').update(seq + csc).digest('hex').toUpperCase()
+
+  // Formato v2: URL?p=sequência|hash
+  const url = `${baseUrl}?p=${seq}|${hash}`
 
   return url
 }

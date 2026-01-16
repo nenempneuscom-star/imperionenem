@@ -47,17 +47,21 @@ export function gerarXMLNFCe(dados: NFCeData): { xml: string; chave: string; inf
     uf,
   })
 
-  // Gera XML SEM infNFeSupl (será adicionado após assinatura)
-  const xml = gerarXMLBase({
+  // Gera infNFeSupl - COM CDATA para proteger caracteres especiais (| ? &)
+  const infNFeSupl = `<infNFeSupl><qrCode><![CDATA[${urlQRCode}]]></qrCode><urlChave><![CDATA[${urlConsulta}]]></urlChave></infNFeSupl>`
+
+  // Gera XML COM infNFeSupl já incluído
+  // Ordem correta segundo schema: infNFe -> infNFeSupl -> Signature
+  // A assinatura será calculada apenas sobre infNFe (via Reference URI)
+  const xmlBase = gerarXMLBase({
     ...dados,
     chave,
     codigoNumerico,
     modelo: '65',
-    // NÃO passa urlQRCode para não incluir infNFeSupl no XML base
   })
 
-  // Gera infNFeSupl separadamente para ser adicionado APÓS a assinatura
-  const infNFeSupl = `<infNFeSupl><qrCode><![CDATA[${urlQRCode}]]></qrCode><urlChave>${urlConsulta}</urlChave></infNFeSupl>`
+  // Adiciona infNFeSupl antes do fechamento do NFe
+  const xml = xmlBase.replace('</NFe>', `${infNFeSupl}</NFe>`)
 
   return { xml, chave, infNFeSupl }
 }
@@ -305,9 +309,12 @@ function gerarXMLBase(dados: any): string {
     infAdic.ele('infCpl').txt(truncar(dados.informacoesAdicionais, 5000))
   }
 
-  // NOTA: infNFeSupl (QR Code) é adicionado APÓS a assinatura no fluxo de emissão
-  // Não deve ser incluído aqui para manter a ordem correta do XML:
-  // infNFe -> Signature -> infNFeSupl
+  // Responsável Técnico - obrigatório para NFC-e
+  const infRespTec = doc.ele('infRespTec')
+  infRespTec.ele('CNPJ').txt('36985207000100') // CNPJ do responsável técnico
+  infRespTec.ele('xContato').txt('IMPERIO SISTEMAS')
+  infRespTec.ele('email').txt('suporte@imperiosistemas.com.br')
+  infRespTec.ele('fone').txt('48999999999')
 
   return doc.end({ prettyPrint: false })
 }
@@ -332,10 +339,18 @@ export function gerarEnvelopeSOAP(xmlAssinado: string, servico: string): string 
 /**
  * Gera lote para envio
  * O XML assinado é inserido diretamente como string (não como CDATA)
+ *
+ * IMPORTANTE: REMOVER o namespace duplicado do elemento NFe!
+ * O enviNFe já declara o namespace, então NFe herda dele.
+ * Manter namespace duplicado pode confundir alguns validadores de schema.
  */
 export function gerarLoteEnvio(xmlAssinado: string, idLote: string): string {
-  // Remove a declaração XML do xmlAssinado se existir, pois já teremos uma no lote
-  const xmlLimpo = xmlAssinado.replace(/<\?xml[^?]*\?>\s*/gi, '')
+  // Remove a declaração XML do xmlAssinado se existir
+  let xmlLimpo = xmlAssinado.replace(/<\?xml[^?]*\?>\s*/gi, '')
+
+  // Remove o namespace duplicado do NFe - enviNFe já declara o namespace
+  // e NFe herda dele automaticamente. Namespace duplicado pode causar erro 225.
+  xmlLimpo = xmlLimpo.replace(/<NFe xmlns="http:\/\/www\.portalfiscal\.inf\.br\/nfe">/, '<NFe>')
 
   // Monta o lote manualmente para garantir que o XML assinado seja inserido corretamente
   const loteXML = `<enviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="${VERSAO_NFE}"><idLote>${idLote}</idLote><indSinc>1</indSinc>${xmlLimpo}</enviNFe>`

@@ -31,11 +31,12 @@ export function assinarXML(xml: string, certificado: CertificadoA1): string {
     ],
   })
 
-  // Define onde inserir a assinatura
+  // Define onde inserir a assinatura - antes do fechamento de NFe
+  // Ordem correta: infNFe -> infNFeSupl -> Signature -> </NFe>
   sig.computeSignature(xml, {
     location: {
-      reference: `//*[local-name()='infNFe']`,
-      action: 'after',
+      reference: `//*[local-name()='NFe']`,
+      action: 'append',
     },
   })
 
@@ -109,8 +110,9 @@ export function assinarXMLManual(xml: string, certificado: CertificadoA1): strin
   // Monta elemento Signature
   const signature = `<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">${signedInfo}<SignatureValue>${signatureValue}</SignatureValue><KeyInfo><X509Data><X509Certificate>${certBase64}</X509Certificate></X509Data></KeyInfo></Signature>`
 
-  // Insere a assinatura após o fechamento de infNFe
-  const xmlAssinado = xml.replace('</infNFe>', `</infNFe>${signature}`)
+  // Insere a assinatura antes do fechamento de NFe
+  // Ordem correta: infNFe -> infNFeSupl -> Signature -> </NFe>
+  const xmlAssinado = xml.replace('</NFe>', `${signature}</NFe>`)
 
   return xmlAssinado
 }

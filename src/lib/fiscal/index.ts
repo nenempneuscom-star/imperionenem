@@ -10,7 +10,7 @@ export * from './danfe'
 
 import { lerCertificadoA1, CertificadoA1 } from './certificate'
 import { gerarXMLNFCe, gerarXMLNFe } from './xml/generator'
-import { assinarXMLManual } from './xml/signer'
+import { assinarXML } from './xml/signer'
 import { enviarParaSEFAZ, consultarStatusSEFAZ, consultarNFePorChave, cancelarNFe } from './sefaz'
 import { NFCeData, NFeData, RetornoSEFAZ, ConfiguracaoFiscal, EmpresaFiscal } from './types'
 
@@ -68,19 +68,17 @@ export class ServicoFiscal {
         csc: this.config.cscNFCe,
       }
 
-      // Gera XML (retorna também infNFeSupl separado)
-      const { xml, chave, infNFeSupl } = gerarXMLNFCe(dadosCompletos)
+      // Gera XML (já inclui infNFeSupl antes do fechamento de </NFe>)
+      // Ordem correta: infNFe -> infNFeSupl -> Signature
+      const { xml, chave } = gerarXMLNFCe(dadosCompletos)
 
-      // Assina XML
-      const xmlAssinado = assinarXMLManual(xml, this.certificado)
-
-      // Adiciona infNFeSupl APÓS a assinatura, antes do fechamento de </NFe>
-      // Estrutura correta: <NFe><infNFe>...</infNFe><Signature>...</Signature><infNFeSupl>...</infNFeSupl></NFe>
-      const xmlComQRCode = xmlAssinado.replace('</NFe>', `${infNFeSupl}</NFe>`)
+      // Assina XML usando xml-crypto (insere Signature ao final do NFe)
+      // A Signature é adicionada APÓS o infNFeSupl, mantendo a ordem correta
+      const xmlAssinado = assinarXML(xml, this.certificado)
 
       // Envia para SEFAZ
       const retorno = await enviarParaSEFAZ({
-        xmlAssinado: xmlComQRCode,
+        xmlAssinado,
         certificado: this.certificado,
         uf: this.config.uf,
         ambiente: this.config.ambiente,
@@ -96,7 +94,7 @@ export class ServicoFiscal {
         sucesso: retorno.sucesso,
         chave: retorno.chave || chave,
         protocolo: retorno.protocolo,
-        xml: xmlComQRCode,
+        xml: xmlAssinado,
         mensagem: retorno.mensagem,
         codigo: retorno.codigo,
       }
@@ -129,8 +127,8 @@ export class ServicoFiscal {
       // Gera XML
       const { xml, chave } = gerarXMLNFe(dadosCompletos)
 
-      // Assina XML
-      const xmlAssinado = assinarXMLManual(xml, this.certificado)
+      // Assina XML usando xml-crypto
+      const xmlAssinado = assinarXML(xml, this.certificado)
 
       // Envia para SEFAZ
       const retorno = await enviarParaSEFAZ({
