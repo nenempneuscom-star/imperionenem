@@ -9,6 +9,13 @@ const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
   removeNSPrefix: true,
+  // IMPORTANTE: Não converter strings numéricas para Number
+  // A chave de acesso (44 dígitos) perde precisão se convertida para Number
+  numberParseOptions: {
+    hex: false,
+    leadingZeros: false,
+    skipLike: /.*/, // Não parsear nenhum número - manter tudo como string
+  },
 })
 
 /**
