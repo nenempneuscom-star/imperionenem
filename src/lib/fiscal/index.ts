@@ -71,7 +71,7 @@ export class ServicoFiscal {
 
       // Gera XML (já inclui infNFeSupl antes do fechamento de </NFe>)
       // Ordem correta: infNFe -> infNFeSupl -> Signature
-      const { xml, chave } = gerarXMLNFCe(dadosCompletos)
+      const { xml, chave, qrCodeUrl } = gerarXMLNFCe(dadosCompletos)
 
       // Assina XML usando xml-crypto (insere Signature ao final do NFe)
       // A Signature é adicionada APÓS o infNFeSupl, mantendo a ordem correta
@@ -98,6 +98,7 @@ export class ServicoFiscal {
         xml: xmlAssinado,
         mensagem: retorno.mensagem,
         codigo: retorno.codigo,
+        qrCodeUrl,
       }
     } catch (error: any) {
       return {

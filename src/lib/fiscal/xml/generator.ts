@@ -16,7 +16,7 @@ const VERSAO_NFE = '4.00'
  * Gera XML de NFC-e
  * Retorna também os dados suplementares (QR Code) para serem adicionados APÓS a assinatura
  */
-export function gerarXMLNFCe(dados: NFCeData): { xml: string; chave: string; infNFeSupl: string } {
+export function gerarXMLNFCe(dados: NFCeData): { xml: string; chave: string; infNFeSupl: string; qrCodeUrl: string } {
   const codigoNumerico = gerarCodigoNumerico()
 
   // Gera chave de acesso
@@ -63,7 +63,7 @@ export function gerarXMLNFCe(dados: NFCeData): { xml: string; chave: string; inf
   // Adiciona infNFeSupl antes do fechamento do NFe
   const xml = xmlBase.replace('</NFe>', `${infNFeSupl}</NFe>`)
 
-  return { xml, chave, infNFeSupl }
+  return { xml, chave, infNFeSupl, qrCodeUrl: urlQRCode }
 }
 
 /**
