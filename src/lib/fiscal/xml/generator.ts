@@ -7,6 +7,7 @@ import {
   formatarValor,
   truncar,
   gerarURLQRCode,
+  getURLConsulta,
 } from '../utils'
 
 const VERSAO_NFE = '4.00'
@@ -30,18 +31,21 @@ export function gerarXMLNFCe(dados: NFCeData): { xml: string; chave: string; inf
     codigoNumerico,
   })
 
-  // Gera QR Code
+  // Gera QR Code com URL específica para SC
+  const uf = dados.empresa.endereco.uf
   const urlQRCode = gerarURLQRCode({
     chave,
     ambiente: dados.ambiente,
     csc: dados.csc,
     idToken: dados.idToken,
+    uf,
   })
 
-  // URL de consulta
-  const urlConsulta = dados.ambiente === 1
-    ? 'https://sat.sef.sc.gov.br/nfce/consulta'
-    : 'https://sat-h.sef.sc.gov.br/nfce/consulta'
+  // URL de consulta por chave (SC usa portal SAT próprio para produção)
+  const urlConsulta = getURLConsulta({
+    ambiente: dados.ambiente,
+    uf,
+  })
 
   // Gera XML SEM infNFeSupl (será adicionado após assinatura)
   const xml = gerarXMLBase({

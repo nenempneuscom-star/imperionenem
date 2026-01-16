@@ -142,27 +142,76 @@ export function gerarHashQRCode(
 }
 
 /**
- * Gera URL do QR Code NFC-e (SC)
+ * URLs de QR Code por UF
+ * SC usa portal SAT próprio para produção, SVRS para homologação
+ * Referência: https://www.sef.sc.gov.br/servicos/assunto/57/NFC-e
+ */
+const URLS_QRCODE: Record<string, { producao: string; homologacao: string }> = {
+  'SC': {
+    producao: 'https://sat.sef.sc.gov.br/nfce/qrcode',
+    homologacao: 'https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx',
+  },
+  'RS': {
+    producao: 'https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx',
+    homologacao: 'https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx',
+  },
+  // Adicionar outros estados conforme necessário
+}
+
+/**
+ * URLs de Consulta por Chave (urlChave) por UF
+ * SC usa portal SAT próprio para produção
+ */
+const URLS_CONSULTA: Record<string, { producao: string; homologacao: string }> = {
+  'SC': {
+    producao: 'https://sat.sef.sc.gov.br/nfce/consulta',
+    homologacao: 'https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx',
+  },
+  'RS': {
+    producao: 'https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx',
+    homologacao: 'https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx',
+  },
+}
+
+/**
+ * Gera URL do QR Code NFC-e
+ * Formato: URL?p=chave|versaoQRCode|tipoAmbiente|idCSC|hash
+ * Referência: NT 2019.001 e Manual de Orientação do Contribuinte
  */
 export function gerarURLQRCode(params: {
   chave: string
   ambiente: 1 | 2
   csc: string
   idToken: number
+  uf?: string
 }): string {
-  const { chave, ambiente, csc, idToken } = params
+  const { chave, ambiente, csc, idToken, uf = 'SC' } = params
 
-  const hash = gerarHashQRCode(chave, ambiente, csc, idToken)
+  // Gera hash SHA1: chave|2|tipoAmbiente|idCSC|CSC
+  const dadosHash = `${chave}|2|${ambiente}|${idToken}|${csc}`
+  const hash = crypto.createHash('sha1').update(dadosHash).digest('hex').toUpperCase()
 
-  // URL base SC
-  const baseUrl = ambiente === 1
-    ? 'https://nfce.sefaz.sc.gov.br/qrcode'
-    : 'https://nfce-homologacao.sefaz.sc.gov.br/qrcode'
+  // URL base conforme UF e ambiente
+  const urls = URLS_QRCODE[uf] || URLS_QRCODE['SC']
+  const baseUrl = ambiente === 1 ? urls.producao : urls.homologacao
 
-  // Monta URL completa
-  const url = `${baseUrl}?p=${chave}|2|${idToken}|${hash}`
+  // Monta URL completa: chave|versaoQR|tipoAmb|idCSC|hash
+  const url = `${baseUrl}?p=${chave}|2|${ambiente}|${idToken}|${hash}`
 
   return url
+}
+
+/**
+ * Retorna URL de consulta por chave (urlChave) para o elemento infNFeSupl
+ * SC usa portal SAT próprio para produção
+ */
+export function getURLConsulta(params: {
+  ambiente: 1 | 2
+  uf?: string
+}): string {
+  const { ambiente, uf = 'SC' } = params
+  const urls = URLS_CONSULTA[uf] || URLS_CONSULTA['SC']
+  return ambiente === 1 ? urls.producao : urls.homologacao
 }
 
 /**
