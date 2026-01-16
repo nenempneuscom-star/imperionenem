@@ -55,10 +55,13 @@ export async function enviarParaSEFAZ(params: {
 
   try {
     // Configura agente HTTPS com certificado
+    // rejectUnauthorized: false porque os certificados da SEFAZ são emitidos pela ICP-Brasil
+    // que não está no bundle padrão de CAs do Node.js
     const httpsAgent = new https.Agent({
       cert: certificado.pem.cert,
       key: certificado.pem.key,
-      rejectUnauthorized: true,
+      rejectUnauthorized: false,
+      secureProtocol: 'TLSv1_2_method',
     })
 
     // Envia requisição SOAP
@@ -267,10 +270,12 @@ export async function consultarNFePorChave(params: {
 </soap12:Envelope>`
 
   try {
+    // rejectUnauthorized: false porque os certificados da SEFAZ são emitidos pela ICP-Brasil
     const httpsAgent = new https.Agent({
       cert: certificado.pem.cert,
       key: certificado.pem.key,
-      rejectUnauthorized: true,
+      rejectUnauthorized: false,
+      secureProtocol: 'TLSv1_2_method',
     })
 
     const response = await axios.post(url, soapEnvelope, {
@@ -360,10 +365,12 @@ export async function cancelarNFe(params: {
 </soap12:Envelope>`
 
   try {
+    // rejectUnauthorized: false porque os certificados da SEFAZ são emitidos pela ICP-Brasil
     const httpsAgent = new https.Agent({
       cert: certificado.pem.cert,
       key: certificado.pem.key,
-      rejectUnauthorized: true,
+      rejectUnauthorized: false,
+      secureProtocol: 'TLSv1_2_method',
     })
 
     const response = await axios.post(url, soapEnvelope, {
