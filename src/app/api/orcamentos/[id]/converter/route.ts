@@ -11,7 +11,7 @@ export async function POST(
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
   // Buscar usuario
@@ -22,7 +22,7 @@ export async function POST(
     .single()
 
   if (!usuario) {
-    return NextResponse.json({ error: 'Usuario nao encontrado' }, { status: 404 })
+    return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
   }
 
   // Buscar orcamento completo
@@ -36,19 +36,19 @@ export async function POST(
     .single()
 
   if (orcamentoError || !orcamento) {
-    return NextResponse.json({ error: 'Orcamento nao encontrado' }, { status: 404 })
+    return NextResponse.json({ error: 'Orçamento não encontrado' }, { status: 404 })
   }
 
   if (orcamento.status === 'convertido') {
-    return NextResponse.json({ error: 'Este orcamento ja foi convertido em venda' }, { status: 400 })
+    return NextResponse.json({ error: 'Este orçamento já foi convertido em venda' }, { status: 400 })
   }
 
   if (orcamento.status === 'expirado') {
-    return NextResponse.json({ error: 'Este orcamento esta expirado' }, { status: 400 })
+    return NextResponse.json({ error: 'Este orçamento está expirado' }, { status: 400 })
   }
 
   if (orcamento.status === 'rejeitado') {
-    return NextResponse.json({ error: 'Este orcamento foi rejeitado' }, { status: 400 })
+    return NextResponse.json({ error: 'Este orçamento foi rejeitado' }, { status: 400 })
   }
 
   const body = await request.json()
@@ -73,7 +73,7 @@ export async function POST(
         total: orcamento.total,
         status: 'finalizada',
         tipo_documento: 'sem_nota',
-        observacoes: `Convertido do Orcamento #${orcamento.numero}`,
+        observacoes: `Convertido do Orçamento #${orcamento.numero}`,
       })
       .select()
       .single()
@@ -132,7 +132,7 @@ export async function POST(
           caixa_id: caixa_id,
           tipo: 'entrada',
           valor: orcamento.total,
-          descricao: `Venda #${venda.numero} (Orcamento #${orcamento.numero})`,
+          descricao: `Venda #${venda.numero} (Orçamento #${orcamento.numero})`,
           venda_id: venda.id,
         })
     }
@@ -153,7 +153,7 @@ export async function POST(
       success: true,
       venda_id: venda.id,
       venda_numero: venda.numero,
-      message: `Orcamento convertido em Venda #${venda.numero}`,
+      message: `Orçamento convertido em Venda #${venda.numero}`,
     })
   } catch (error: any) {
     console.error('Erro ao converter orcamento:', error)

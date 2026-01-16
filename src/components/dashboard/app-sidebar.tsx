@@ -46,7 +46,7 @@ const menuItems = [
     items: [
       { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       { title: 'PDV', href: '/pdv', icon: ShoppingCart },
-      { title: 'Orcamentos', href: '/dashboard/orcamentos', icon: ClipboardList },
+      { title: 'Orçamentos', href: '/dashboard/orcamentos', icon: ClipboardList },
     ],
   },
   {
@@ -69,7 +69,7 @@ const menuItems = [
   {
     title: 'Financeiro',
     items: [
-      { title: 'Crediário / Fiado', href: '/dashboard/financeiro/crediario', icon: HandCoins },
+      { title: 'Crediário/Fiado', href: '/dashboard/financeiro/crediario', icon: HandCoins },
       { title: 'Contas a Pagar', href: '/dashboard/financeiro/contas-pagar', icon: Wallet },
       { title: 'Contas a Receber', href: '/dashboard/financeiro/contas-receber', icon: Receipt },
       { title: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo-caixa', icon: BarChart3 },

@@ -68,7 +68,7 @@ export default function PDVPage() {
   const searchRef = useRef<HTMLInputElement>(null)
   const [search, setSearch] = useState('')
 
-  // Scanner de codigo de barras
+  // Scanner de código de barras
   const lastKeystrokeTime = useRef<number>(0)
   const keystrokeBuffer = useRef<string>('')
   const [isScannerInput, setIsScannerInput] = useState(false)
@@ -255,7 +255,7 @@ export default function PDVPage() {
           setFidelidadeConfig(config)
         }
       } catch {
-        // Programa de fidelidade nao configurado
+        // Programa de fidelidade não configurado
       }
     }
 
@@ -264,7 +264,7 @@ export default function PDVPage() {
     buscarFidelidadeConfig()
   }, [supabase])
 
-  // Verificar se ha caixa aberto
+  // Verificar se há caixa aberto
   useEffect(() => {
     async function verificarCaixa() {
       try {
@@ -283,7 +283,7 @@ export default function PDVPage() {
     carregarConfigDesconto()
   }, [])
 
-  // Carregar configuracao de desconto
+  // Carregar configuração de desconto
   async function carregarConfigDesconto() {
     try {
       const response = await fetch('/api/configuracoes/desconto')
@@ -333,12 +333,12 @@ export default function PDVPage() {
 
     const peso = parseFloat(weightValue.replace(',', '.'))
     if (isNaN(peso) || peso <= 0) {
-      toast.error('Digite um peso valido')
+      toast.error('Digite um peso válido')
       return
     }
 
     if (peso > pendingWeightProduct.estoque_atual) {
-      toast.error(`Estoque insuficiente. Disponivel: ${pendingWeightProduct.estoque_atual} ${pendingWeightProduct.unidade}`)
+      toast.error(`Estoque insuficiente. Disponível: ${pendingWeightProduct.estoque_atual} ${pendingWeightProduct.unidade}`)
       return
     }
 
@@ -450,7 +450,7 @@ export default function PDVPage() {
         }
       } else {
         playBeep(false)
-        toast.error('Produto nao encontrado', { description: `Codigo: ${codigoBarras}` })
+        toast.error('Produto não encontrado', { description: `Código: ${codigoBarras}` })
       }
     } catch (error) {
       console.error('Erro ao buscar produto:', error)
@@ -679,7 +679,7 @@ export default function PDVPage() {
 
     // Se for crediario, validar limite
     if (clienteModalMode === 'crediario' && creditoDisponivel < total) {
-      toast.error(`Credito insuficiente. Disponivel: ${formatCurrency(creditoDisponivel)}`)
+      toast.error(`Crédito insuficiente. Disponível: ${formatCurrency(creditoDisponivel)}`)
       return
     }
 
@@ -704,7 +704,7 @@ export default function PDVPage() {
   function selecionarVeiculo(veiculo: Veiculo | null) {
     setVeiculoSelecionado(veiculo)
     if (veiculo) {
-      toast.success(`Veiculo ${veiculo.marca} ${veiculo.modelo} selecionado`)
+      toast.success(`Veículo ${veiculo.marca} ${veiculo.modelo} selecionado`)
     }
   }
 
@@ -765,14 +765,14 @@ export default function PDVPage() {
 
     if (hasCrediario) {
       if (!clienteSelecionado) {
-        toast.error('Selecione um cliente para venda no crediario')
+        toast.error('Selecione um cliente para venda no crediário')
         setShowClienteModal(true)
         return
       }
 
       const creditoDisponivel = clienteSelecionado.limite_credito - clienteSelecionado.saldo_devedor
       if (creditoDisponivel < valorCrediario) {
-        toast.error(`Credito insuficiente. Disponivel: ${formatCurrency(creditoDisponivel)}`)
+        toast.error(`Crédito insuficiente. Disponível: ${formatCurrency(creditoDisponivel)}`)
         return
       }
     }
@@ -853,7 +853,7 @@ export default function PDVPage() {
             .eq('auth_id', user?.id)
             .single()
 
-          if (!userData) throw new Error('Usuario nao encontrado')
+          if (!userData) throw new Error('Usuário não encontrado')
 
           const { data: venda, error: vendaError } = await supabase
             .from('vendas')
@@ -1053,7 +1053,7 @@ export default function PDVPage() {
         }
       } else {
         await salvarVenda(vendaData)
-        toast.info('Venda salva offline', { description: 'Sera sincronizada quando voltar a conexao' })
+        toast.info('Venda salva offline', { description: 'Será sincronizada quando voltar a conexão' })
       }
 
       let tributos = { valorTributos: 0, percentualTributos: 0 }
@@ -1129,7 +1129,7 @@ export default function PDVPage() {
   // Imprimir cupom
   function imprimirCupom() {
     if (!vendaFinalizada) {
-      toast.error('Dados da venda nao disponiveis')
+      toast.error('Dados da venda não disponíveis')
       return
     }
 
@@ -1338,7 +1338,7 @@ export default function PDVPage() {
 
   return (
     <div className="flex h-screen">
-      {/* Area Principal - Produtos */}
+      {/* Área Principal - Produtos */}
       <div className="flex-1 flex flex-col p-4">
         {/* Header */}
         <PDVHeader
@@ -1357,7 +1357,7 @@ export default function PDVPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             ref={searchRef}
-            placeholder={scannerEnabled ? "Escaneie ou digite o codigo do produto..." : "Digite o codigo ou nome do produto..."}
+            placeholder={scannerEnabled ? "Escaneie ou digite o código do produto..." : "Digite o código ou nome do produto..."}
             className={`pl-12 pr-24 h-14 text-lg ${isScannerInput ? 'border-green-500 ring-2 ring-green-500/20' : ''}`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -1394,7 +1394,7 @@ export default function PDVPage() {
               <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-6">
                 <ShoppingCart className="h-20 w-20 mb-4 opacity-20" />
                 <p className="text-xl">Carrinho vazio</p>
-                <p className="text-sm">Digite o codigo de barras ou nome do produto</p>
+                <p className="text-sm">Digite o código de barras ou nome do produto</p>
               </div>
             ) : (
               <ScrollArea className="flex-1">
@@ -1486,10 +1486,10 @@ export default function PDVPage() {
             }}
           />
 
-          {/* Identificacao de Cliente/Veiculo */}
+          {/* Identificação de Cliente/Veículo */}
           <div className="p-4 border-b">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-muted-foreground">Identificacao</span>
+              <span className="text-sm font-medium text-muted-foreground">Identificação</span>
               <span className="text-xs text-muted-foreground">F11</span>
             </div>
             {clienteSelecionado ? (
@@ -1531,7 +1531,7 @@ export default function PDVPage() {
                       className="h-7 px-2"
                       onClick={() => {
                         setVeiculoSelecionado(null)
-                        toast.success('Veiculo removido')
+                        toast.success('Veículo removido')
                       }}
                     >
                       <X className="h-3 w-3" />
@@ -1548,7 +1548,7 @@ export default function PDVPage() {
                     }}
                   >
                     <Car className="mr-2 h-4 w-4" />
-                    Selecionar Veiculo
+                    Selecionar Veículo
                   </Button>
                 )}
               </div>

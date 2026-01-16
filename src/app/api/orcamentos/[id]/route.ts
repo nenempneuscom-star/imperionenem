@@ -10,7 +10,7 @@ export async function GET(
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
   const { data, error } = await supabase
@@ -45,7 +45,7 @@ export async function GET(
   }
 
   if (!data) {
-    return NextResponse.json({ error: 'Orcamento nao encontrado' }, { status: 404 })
+    return NextResponse.json({ error: 'Orçamento não encontrado' }, { status: 404 })
   }
 
   // Separar orcamento e itens para facilitar uso no frontend
@@ -62,7 +62,7 @@ export async function PUT(
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
   const body = await request.json()
@@ -89,12 +89,12 @@ export async function PUT(
     .single()
 
   if (!orcamentoExistente) {
-    return NextResponse.json({ error: 'Orcamento nao encontrado' }, { status: 404 })
+    return NextResponse.json({ error: 'Orçamento não encontrado' }, { status: 404 })
   }
 
   // Nao permitir edicao de orcamentos convertidos
   if (orcamentoExistente.status === 'convertido') {
-    return NextResponse.json({ error: 'Nao e possivel editar um orcamento ja convertido em venda' }, { status: 400 })
+    return NextResponse.json({ error: 'Não é possível editar um orçamento já convertido em venda' }, { status: 400 })
   }
 
   // Se estiver atualizando itens
@@ -205,7 +205,7 @@ export async function DELETE(
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
   // Verificar se orcamento pode ser deletado
@@ -216,11 +216,11 @@ export async function DELETE(
     .single()
 
   if (!orcamento) {
-    return NextResponse.json({ error: 'Orcamento nao encontrado' }, { status: 404 })
+    return NextResponse.json({ error: 'Orçamento não encontrado' }, { status: 404 })
   }
 
   if (orcamento.status === 'convertido') {
-    return NextResponse.json({ error: 'Nao e possivel excluir um orcamento convertido em venda' }, { status: 400 })
+    return NextResponse.json({ error: 'Não é possível excluir um orçamento convertido em venda' }, { status: 400 })
   }
 
   // Deletar itens (CASCADE deve fazer isso, mas por seguranca)

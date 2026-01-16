@@ -99,13 +99,13 @@ export default function OrcamentosPage() {
       }
 
       const response = await fetch(url)
-      if (!response.ok) throw new Error('Erro ao buscar orcamentos')
+      if (!response.ok) throw new Error('Erro ao buscar orçamentos')
 
       const data = await response.json()
       setOrcamentos(data)
     } catch (error) {
       console.error('Erro:', error)
-      toast.error('Erro ao carregar orcamentos')
+      toast.error('Erro ao carregar orçamentos')
     } finally {
       setLoading(false)
     }
@@ -125,7 +125,7 @@ export default function OrcamentosPage() {
         throw new Error(data.error || 'Erro ao excluir')
       }
 
-      toast.success('Orcamento excluido com sucesso')
+      toast.success('Orçamento excluído com sucesso')
       fetchOrcamentos()
     } catch (error: any) {
       toast.error(error.message || 'Erro ao excluir orcamento')
@@ -239,11 +239,11 @@ export default function OrcamentosPage() {
     const mensagem = `*ORCAMENTO #${orcamento.numero}*
 Nenem Pneus
 
-Ola ${clienteNome}!
+Olá ${clienteNome}!
 
 Seu orcamento no valor de *${formatCurrency(orcamento.total)}* esta disponivel.
 
-Valido ate: ${formatDate(orcamento.data_validade)}
+Válido até: ${formatDate(orcamento.data_validade)}
 
 Para mais detalhes, entre em contato conosco.
 Aguardamos seu retorno!`
@@ -313,15 +313,15 @@ Aguardamos seu retorno!`
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Orcamentos</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Orçamentos</h1>
           <p className="text-muted-foreground">
-            Gerencie os orcamentos da empresa
+            Gerencie os orçamentos da empresa
           </p>
         </div>
         <Button asChild>
           <Link href="/dashboard/orcamentos/novo">
             <Plus className="h-4 w-4 mr-2" />
-            Novo Orcamento
+            Novo Orçamento
           </Link>
         </Button>
       </div>
@@ -359,7 +359,7 @@ Aguardamos seu retorno!`
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Lista de Orcamentos
+            Lista de Orçamentos
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -367,7 +367,7 @@ Aguardamos seu retorno!`
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por cliente ou numero..."
+                placeholder="Buscar por cliente ou número..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -399,7 +399,7 @@ Aguardamos seu retorno!`
               <Button asChild variant="outline" className="mt-4">
                 <Link href="/dashboard/orcamentos/novo">
                   <Plus className="h-4 w-4 mr-2" />
-                  Criar Primeiro Orcamento
+                  Criar Primeiro Orçamento
                 </Link>
               </Button>
             </div>
@@ -408,7 +408,7 @@ Aguardamos seu retorno!`
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Numero</TableHead>
+                    <TableHead>Número</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Itens</TableHead>
                     <TableHead>Total</TableHead>
@@ -510,9 +510,9 @@ Aguardamos seu retorno!`
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Orcamento</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Orçamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este orcamento? Esta acao nao pode ser desfeita.
+              Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -534,7 +534,7 @@ Aguardamos seu retorno!`
           <AlertDialogHeader>
             <AlertDialogTitle>Converter em Venda</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja converter este orcamento em uma venda? Os produtos serao baixados do estoque.
+              Deseja converter este orçamento em uma venda? Os produtos serão baixados do estoque.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

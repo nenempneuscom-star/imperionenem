@@ -216,7 +216,7 @@ export async function DELETE(request: NextRequest) {
     // Verifica autenticacao
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
     // Busca dados do usuario e empresa
@@ -227,7 +227,7 @@ export async function DELETE(request: NextRequest) {
       .single()
 
     if (!userData?.empresa_id) {
-      return NextResponse.json({ error: 'Empresa nao encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 })
     }
 
     // Busca configuracoes fiscais
@@ -238,14 +238,14 @@ export async function DELETE(request: NextRequest) {
       .single()
 
     if (!empresa) {
-      return NextResponse.json({ error: 'Empresa nao encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 })
     }
 
     const configFiscal = empresa.config_fiscal || {}
 
     if (!configFiscal.certificado_base64 || !configFiscal.certificado_senha) {
       return NextResponse.json(
-        { error: 'Certificado digital nao configurado' },
+        { error: 'Certificado digital não configurado' },
         { status: 400 }
       )
     }
@@ -255,16 +255,16 @@ export async function DELETE(request: NextRequest) {
     const { chave, protocolo, justificativa } = body
 
     if (!chave) {
-      return NextResponse.json({ error: 'Chave de acesso obrigatoria' }, { status: 400 })
+      return NextResponse.json({ error: 'Chave de acesso obrigatória' }, { status: 400 })
     }
 
     if (!protocolo) {
-      return NextResponse.json({ error: 'Protocolo de autorizacao obrigatorio' }, { status: 400 })
+      return NextResponse.json({ error: 'Protocolo de autorização obrigatório' }, { status: 400 })
     }
 
     if (!justificativa || justificativa.length < 15) {
       return NextResponse.json(
-        { error: 'Justificativa obrigatoria (minimo 15 caracteres)' },
+        { error: 'Justificativa obrigatória (mínimo 15 caracteres)' },
         { status: 400 }
       )
     }
@@ -278,11 +278,11 @@ export async function DELETE(request: NextRequest) {
       .single()
 
     if (!nota) {
-      return NextResponse.json({ error: 'Nota fiscal nao encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Nota fiscal não encontrada' }, { status: 404 })
     }
 
     if (nota.status === 'cancelada') {
-      return NextResponse.json({ error: 'Nota ja esta cancelada' }, { status: 400 })
+      return NextResponse.json({ error: 'Nota já está cancelada' }, { status: 400 })
     }
 
     if (nota.status !== 'autorizada') {
@@ -296,7 +296,7 @@ export async function DELETE(request: NextRequest) {
 
     if (horasDesdeEmissao > 24) {
       return NextResponse.json(
-        { error: 'Prazo para cancelamento expirado (maximo 24 horas)' },
+        { error: 'Prazo para cancelamento expirado (máximo 24 horas)' },
         { status: 400 }
       )
     }

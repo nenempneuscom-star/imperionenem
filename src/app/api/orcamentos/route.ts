@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
   // Buscar empresa do usuario
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     .single()
 
   if (!usuario) {
-    return NextResponse.json({ error: 'Usuario nao encontrado' }, { status: 404 })
+    return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
   }
 
   let query = supabase
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
   // Buscar usuario
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (!usuario) {
-    return NextResponse.json({ error: 'Usuario nao encontrado' }, { status: 404 })
+    return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
   }
 
   const body = await request.json()
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
   } = body
 
   if (!itens || itens.length === 0) {
-    return NextResponse.json({ error: 'O orcamento deve ter pelo menos um item' }, { status: 400 })
+    return NextResponse.json({ error: 'O orçamento deve ter pelo menos um item' }, { status: 400 })
   }
 
   // Calcular totais

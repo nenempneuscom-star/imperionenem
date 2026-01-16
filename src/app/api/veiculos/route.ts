@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
     const { data: userData } = await supabase
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!userData?.empresa_id) {
-      return NextResponse.json({ error: 'Empresa nao encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 })
     }
 
     let query = supabase
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
     const { data: userData } = await supabase
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!userData?.empresa_id) {
-      return NextResponse.json({ error: 'Empresa nao encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 })
     }
 
     const body = await request.json()
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     if (!cliente_id || !marca || !modelo) {
       return NextResponse.json(
-        { error: 'Cliente, marca e modelo sao obrigatorios' },
+        { error: 'Cliente, marca e modelo são obrigatórios' },
         { status: 400 }
       )
     }
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!cliente) {
-      return NextResponse.json({ error: 'Cliente nao encontrado' }, { status: 404 })
+      return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 })
     }
 
     const { data, error } = await supabase
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       if (error.code === '23505') {
         return NextResponse.json(
-          { error: 'Ja existe um veiculo com esta placa' },
+          { error: 'Já existe um veículo com esta placa' },
           { status: 400 }
         )
       }
@@ -140,7 +140,7 @@ export async function PUT(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
     const { data: userData } = await supabase
@@ -150,14 +150,14 @@ export async function PUT(request: NextRequest) {
       .single()
 
     if (!userData?.empresa_id) {
-      return NextResponse.json({ error: 'Empresa nao encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 })
     }
 
     const body = await request.json()
     const { id, marca, modelo, ano, placa, cor, chassi, observacoes, ativo } = body
 
     if (!id) {
-      return NextResponse.json({ error: 'ID do veiculo obrigatorio' }, { status: 400 })
+      return NextResponse.json({ error: 'ID do veículo obrigatório' }, { status: 400 })
     }
 
     const { data, error } = await supabase
@@ -180,7 +180,7 @@ export async function PUT(request: NextRequest) {
     if (error) {
       if (error.code === '23505') {
         return NextResponse.json(
-          { error: 'Ja existe um veiculo com esta placa' },
+          { error: 'Já existe um veículo com esta placa' },
           { status: 400 }
         )
       }
@@ -202,12 +202,12 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id')
 
     if (!id) {
-      return NextResponse.json({ error: 'ID do veiculo obrigatorio' }, { status: 400 })
+      return NextResponse.json({ error: 'ID do veículo obrigatório' }, { status: 400 })
     }
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
     const { data: userData } = await supabase
@@ -217,7 +217,7 @@ export async function DELETE(request: NextRequest) {
       .single()
 
     if (!userData?.empresa_id) {
-      return NextResponse.json({ error: 'Empresa nao encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Empresa não encontrada' }, { status: 404 })
     }
 
     const { error } = await supabase

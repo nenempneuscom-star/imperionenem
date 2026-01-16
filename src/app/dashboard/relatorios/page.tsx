@@ -136,7 +136,7 @@ export default function RelatoriosPage() {
   const [relatorioClientes, setRelatorioClientes] = useState<RelatorioClientes | null>(null)
   const [relatorioOperacional, setRelatorioOperacional] = useState<RelatorioOperacional | null>(null)
   const [relatorioEstoqueCritico, setRelatorioEstoqueCritico] = useState<RelatorioEstoqueCritico | null>(null)
-  const [relatorioSaude, setRelatorioSaude] = useState<RelatorioSaudeFinanceira | null>(null)
+  const [relatorioSaude, setRelatórioSaude] = useState<RelatorioSaudeFinanceira | null>(null)
   const [relatorioFiscal, setRelatorioFiscal] = useState<RelatorioFiscal | null>(null)
   const [relatorioCancelamentos, setRelatorioCancelamentos] = useState<RelatorioCancelamentos | null>(null)
 
@@ -150,7 +150,7 @@ export default function RelatoriosPage() {
   })
 
   // Funcoes dos relatorios existentes
-  async function buscarRelatorioVendas() {
+  async function buscarRelatórioVendas() {
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -191,7 +191,7 @@ export default function RelatoriosPage() {
         ticketMedio: quantidade > 0 ? total / quantidade : 0,
       })
 
-      toast.success('Relatorio gerado!')
+      toast.success('Relatório gerado!')
     } catch (error) {
       toast.error('Erro ao gerar relatorio')
     } finally {
@@ -264,7 +264,7 @@ export default function RelatoriosPage() {
     }
   }
 
-  async function buscarRelatorioProdutos() {
+  async function buscarRelatórioProdutos() {
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -289,7 +289,7 @@ export default function RelatoriosPage() {
         baixoEstoque,
       })
 
-      toast.success('Relatorio gerado!')
+      toast.success('Relatório gerado!')
     } catch (error) {
       toast.error('Erro ao gerar relatorio')
     } finally {
@@ -297,7 +297,7 @@ export default function RelatoriosPage() {
     }
   }
 
-  async function buscarRelatorioMaisVendidos() {
+  async function buscarRelatórioMaisVendidos() {
     setLoading(true)
     try {
       const { data: itensVendidos, error } = await supabase
@@ -342,7 +342,7 @@ export default function RelatoriosPage() {
       )
 
       setProdutos(produtosOrdenados)
-      toast.success('Relatorio gerado!')
+      toast.success('Relatório gerado!')
     } catch (error) {
       toast.error('Erro ao gerar relatorio')
     } finally {
@@ -350,7 +350,7 @@ export default function RelatoriosPage() {
     }
   }
 
-  async function buscarRelatorioPagamentos() {
+  async function buscarRelatórioPagamentos() {
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -383,7 +383,7 @@ export default function RelatoriosPage() {
       const pagamentosOrdenados = Object.values(agrupado).sort((a, b) => b.total - a.total)
       setPagamentos(pagamentosOrdenados)
 
-      toast.success('Relatorio gerado!')
+      toast.success('Relatório gerado!')
     } catch (error) {
       toast.error('Erro ao gerar relatorio')
     } finally {
@@ -436,7 +436,7 @@ export default function RelatoriosPage() {
         quantidade_vendas: quantidadeVendas,
       })
 
-      toast.success('Relatorio gerado!')
+      toast.success('Relatório gerado!')
     } catch (error) {
       toast.error('Erro ao gerar relatorio')
     } finally {
@@ -530,7 +530,7 @@ export default function RelatoriosPage() {
   }
 
   // Funcoes dos novos relatorios "fofoqueira"
-  async function buscarRelatorioFofoqueira(tipo: string) {
+  async function buscarRelatórioFofoqueira(tipo: string) {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -564,7 +564,7 @@ export default function RelatoriosPage() {
           setRelatorioEstoqueCritico(data)
           break
         case 'saude-financeira':
-          setRelatorioSaude(data)
+          setRelatórioSaude(data)
           break
         case 'fiscal':
           setRelatorioFiscal(data)
@@ -574,7 +574,7 @@ export default function RelatoriosPage() {
           break
       }
 
-      toast.success('Relatorio gerado!')
+      toast.success('Relatório gerado!')
     } catch (error: any) {
       toast.error(error.message || 'Erro ao gerar relatorio')
     } finally {
@@ -584,7 +584,7 @@ export default function RelatoriosPage() {
 
   function exportarExcel(dados: any[], nomeArquivo: string) {
     if (dados.length === 0) {
-      toast.error('Nao ha dados para exportar')
+      toast.error('Não há dados para exportar')
       return
     }
 
@@ -637,10 +637,10 @@ export default function RelatoriosPage() {
   function formatFormaPagamento(forma: string) {
     const nomes: Record<string, string> = {
       dinheiro: 'Dinheiro',
-      cartao_credito: 'Cartao Credito',
-      cartao_debito: 'Cartao Debito',
+      cartao_credito: 'Cartão Crédito',
+      cartao_debito: 'Cartão Débito',
       pix: 'PIX',
-      crediario: 'Crediario',
+      crediario: 'Crediário',
     }
     return nomes[forma] || forma
   }
@@ -687,7 +687,7 @@ export default function RelatoriosPage() {
         ) : (
           <Search className="mr-2 h-4 w-4" />
         )}
-        Gerar Relatorio
+        Gerar Relatório
       </Button>
     </div>
   )
@@ -695,9 +695,9 @@ export default function RelatoriosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Relatorios</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Relatórios</h1>
         <p className="text-muted-foreground">
-          A "fofoqueira" que sabe tudo sobre seu negocio
+          A "fofoqueira" que sabe tudo sobre seu negócio
         </p>
       </div>
 
@@ -769,14 +769,14 @@ export default function RelatoriosPage() {
         <TabsContent value="vendas" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Relatorio de Vendas</CardTitle>
+              <CardTitle>Relatório de Vendas</CardTitle>
               <CardDescription>
                 Visualize todas as vendas realizadas no periodo
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-4 items-end">
-                <FiltroData onBuscar={buscarRelatorioVendas} />
+                <FiltroData onBuscar={buscarRelatórioVendas} />
                 {vendas.length > 0 && (
                   <Button
                     variant="outline"
@@ -826,7 +826,7 @@ export default function RelatoriosPage() {
                       <div className="flex items-center gap-4">
                         <BarChart3 className="h-8 w-8 text-purple-500" />
                         <div>
-                          <p className="text-sm text-muted-foreground">Ticket Medio</p>
+                          <p className="text-sm text-muted-foreground">Ticket Médio</p>
                           <p className="text-2xl font-bold">{formatCurrency(resumoVendas.ticketMedio)}</p>
                         </div>
                       </div>
@@ -839,7 +839,7 @@ export default function RelatoriosPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Numero</TableHead>
+                      <TableHead>Número</TableHead>
                       <TableHead>Data/Hora</TableHead>
                       <TableHead>Cliente</TableHead>
                       <TableHead>Vendedor</TableHead>
@@ -905,14 +905,14 @@ export default function RelatoriosPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Percent className="h-5 w-5" />
-                Relatorio de Descontos
+                Relatório de Descontos
               </CardTitle>
               <CardDescription>
                 Analise completa dos descontos concedidos
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('descontos')} />
+              <FiltroData onBuscar={() => buscarRelatórioFofoqueira('descontos')} />
 
               {relatorioDescontos && (
                 <>
@@ -986,7 +986,7 @@ export default function RelatoriosPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-muted-foreground text-center py-4">Nenhum desconto no periodo</p>
+                          <p className="text-muted-foreground text-center py-4">Nenhum desconto no período</p>
                         )}
                       </CardContent>
                     </Card>
@@ -1009,7 +1009,7 @@ export default function RelatoriosPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-muted-foreground text-center py-4">Nenhum desconto no periodo</p>
+                          <p className="text-muted-foreground text-center py-4">Nenhum desconto no período</p>
                         )}
                       </CardContent>
                     </Card>
@@ -1025,7 +1025,7 @@ export default function RelatoriosPage() {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Codigo</TableHead>
+                              <TableHead>Código</TableHead>
                               <TableHead>Produto</TableHead>
                               <TableHead className="text-right">Vezes</TableHead>
                               <TableHead className="text-right">Total Desconto</TableHead>
@@ -1053,7 +1053,7 @@ export default function RelatoriosPage() {
               {!relatorioDescontos && !loading && (
                 <div className="text-center py-12 text-muted-foreground">
                   <Percent className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatorio" para ver os descontos</p>
+                  <p>Clique em "Gerar Relatório" para ver os descontos</p>
                 </div>
               )}
             </CardContent>
@@ -1070,7 +1070,7 @@ export default function RelatoriosPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FiltroData onBuscar={buscarRelatorioPagamentos} />
+              <FiltroData onBuscar={buscarRelatórioPagamentos} />
 
               {pagamentos.length > 0 && (
                 <>
@@ -1086,7 +1086,7 @@ export default function RelatoriosPage() {
                               </p>
                               <p className="text-xl font-bold">{formatCurrency(pag.total)}</p>
                               <p className="text-xs text-muted-foreground">
-                                {pag.quantidade} transacao(oes)
+                                {pag.quantidade} transação(ões)
                               </p>
                             </div>
                           </div>
@@ -1097,7 +1097,7 @@ export default function RelatoriosPage() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Distribuicao</CardTitle>
+                      <CardTitle className="text-base">Distribuição</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {pagamentos.map((pag) => {
@@ -1133,14 +1133,14 @@ export default function RelatoriosPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <HandCoins className="h-5 w-5" />
-                Relatorio de Crediario / Fiado
+                Relatório de Crediario / Fiado
               </CardTitle>
               <CardDescription>
                 Acompanhe os creditos concedidos e inadimplencia
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('crediario')} />
+              <FiltroData onBuscar={() => buscarRelatórioFofoqueira('crediario')} />
 
               {relatorioCrediario && (
                 <>
@@ -1239,7 +1239,7 @@ export default function RelatoriosPage() {
               {!relatorioCrediario && !loading && (
                 <div className="text-center py-12 text-muted-foreground">
                   <HandCoins className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatorio" para ver o crediario</p>
+                  <p>Clique em "Gerar Relatório" para ver o crediario</p>
                 </div>
               )}
             </CardContent>
@@ -1251,7 +1251,7 @@ export default function RelatoriosPage() {
           <ClientesTab
             relatorio={relatorioClientes}
             loading={loading}
-            filterComponent={<FiltroData onBuscar={() => buscarRelatorioFofoqueira('clientes')} />}
+            filterComponent={<FiltroData onBuscar={() => buscarRelatórioFofoqueira('clientes')} />}
           />
         </TabsContent>
 
@@ -1261,14 +1261,14 @@ export default function RelatoriosPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
-                Relatorio Operacional
+                Relatório Operacional
               </CardTitle>
               <CardDescription>
                 Analise o dia-a-dia da operacao
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('operacional')} />
+              <FiltroData onBuscar={() => buscarRelatórioFofoqueira('operacional')} />
 
               {relatorioOperacional && (
                 <>
@@ -1313,7 +1313,7 @@ export default function RelatoriosPage() {
                     <Card>
                       <CardContent className="pt-6">
                         <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Ticket Medio</p>
+                          <p className="text-sm text-muted-foreground">Ticket Médio</p>
                           <p className="text-2xl font-bold">
                             {formatCurrency(
                               relatorioOperacional.resumo.totalVendas > 0
@@ -1351,7 +1351,7 @@ export default function RelatoriosPage() {
                             </p>
                           </div>
                           <div className="space-y-2">
-                            <p className="text-sm font-medium text-muted-foreground">Combinacoes mais usadas:</p>
+                            <p className="text-sm font-medium text-muted-foreground">Combinações mais usadas:</p>
                             {relatorioOperacional.pagamentosCombinados?.slice(0, 5).map((pc, i) => (
                               <div key={i} className="flex justify-between items-center text-sm">
                                 <span className="truncate max-w-[180px]">{pc.combinacao}</span>
@@ -1361,7 +1361,7 @@ export default function RelatoriosPage() {
                             {(!relatorioOperacional.pagamentosCombinados ||
                               relatorioOperacional.pagamentosCombinados.length === 0) && (
                               <p className="text-xs text-muted-foreground italic">
-                                Detalhes nao disponiveis
+                                Detalhes não disponíveis
                               </p>
                             )}
                           </div>
@@ -1371,12 +1371,12 @@ export default function RelatoriosPage() {
                   )}
 
                   <div className="grid gap-4 md:grid-cols-2">
-                    {/* Horarios de Pico */}
+                    {/* Horários de Pico */}
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
                           <Clock className="h-4 w-4" />
-                          Horarios de Pico
+                          Horários de Pico
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -1445,7 +1445,7 @@ export default function RelatoriosPage() {
               {!relatorioOperacional && !loading && (
                 <div className="text-center py-12 text-muted-foreground">
                   <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatorio" para ver o operacional</p>
+                  <p>Clique em "Gerar Relatório" para ver o operacional</p>
                 </div>
               )}
             </CardContent>
@@ -1457,7 +1457,7 @@ export default function RelatoriosPage() {
           <MaisVendidosTab
             produtos={produtos}
             loading={loading}
-            filterComponent={<FiltroData onBuscar={buscarRelatorioMaisVendidos} />}
+            filterComponent={<FiltroData onBuscar={buscarRelatórioMaisVendidos} />}
             exportButton={
               produtos.length > 0 ? (
                 <Button
@@ -1519,7 +1519,7 @@ export default function RelatoriosPage() {
           <EstoqueCriticoTab
             relatorio={relatorioEstoqueCritico}
             loading={loading}
-            onBuscar={() => buscarRelatorioFofoqueira('estoque-critico')}
+            onBuscar={() => buscarRelatórioFofoqueira('estoque-critico')}
           />
         </TabsContent>
 
@@ -1529,13 +1529,13 @@ export default function RelatoriosPage() {
             produtos={produtos}
             resumo={resumoEstoque}
             filterComponent={
-              <Button onClick={buscarRelatorioProdutos} disabled={loading}>
+              <Button onClick={buscarRelatórioProdutos} disabled={loading}>
                 {loading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Search className="mr-2 h-4 w-4" />
                 )}
-                Gerar Relatorio
+                Gerar Relatório
               </Button>
             }
             exportButton={
@@ -1568,7 +1568,7 @@ export default function RelatoriosPage() {
           <SaudeTab
             relatorio={relatorioSaude}
             loading={loading}
-            filterComponent={<FiltroData onBuscar={() => buscarRelatorioFofoqueira('saude-financeira')} />}
+            filterComponent={<FiltroData onBuscar={() => buscarRelatórioFofoqueira('saude-financeira')} />}
           />
         </TabsContent>
 
@@ -1577,7 +1577,7 @@ export default function RelatoriosPage() {
           <FiscalTab
             relatorio={relatorioFiscal}
             loading={loading}
-            filterComponent={<FiltroData onBuscar={() => buscarRelatorioFofoqueira('fiscal')} />}
+            filterComponent={<FiltroData onBuscar={() => buscarRelatórioFofoqueira('fiscal')} />}
           />
         </TabsContent>
 
@@ -1596,14 +1596,14 @@ export default function RelatoriosPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <XCircle className="h-5 w-5 text-red-500" />
-                Relatorio de Cancelamentos
+                Relatório de Cancelamentos
               </CardTitle>
               <CardDescription>
                 Analise completa de vendas e notas fiscais canceladas
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FiltroData onBuscar={() => buscarRelatorioFofoqueira('cancelamentos')} />
+              <FiltroData onBuscar={() => buscarRelatórioFofoqueira('cancelamentos')} />
 
               {relatorioCancelamentos && (
                 <>
@@ -1645,7 +1645,7 @@ export default function RelatoriosPage() {
                     <Card>
                       <CardContent className="pt-6">
                         <div className="text-center">
-                          <p className="text-sm text-muted-foreground">Ticket Medio Cancelado</p>
+                          <p className="text-sm text-muted-foreground">Ticket Médio Cancelado</p>
                           <p className="text-2xl font-bold">
                             {formatCurrency(relatorioCancelamentos.resumo.ticketMedioCancelado)}
                           </p>
@@ -1710,7 +1710,7 @@ export default function RelatoriosPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-muted-foreground text-center py-4">Nenhum cancelamento no periodo</p>
+                          <p className="text-muted-foreground text-center py-4">Nenhum cancelamento no período</p>
                         )}
                       </CardContent>
                     </Card>
@@ -1733,7 +1733,7 @@ export default function RelatoriosPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-muted-foreground text-center py-4">Nenhum cancelamento no periodo</p>
+                          <p className="text-muted-foreground text-center py-4">Nenhum cancelamento no período</p>
                         )}
                       </CardContent>
                     </Card>
@@ -1771,7 +1771,7 @@ export default function RelatoriosPage() {
                       <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
                           <Clock className="h-4 w-4" />
-                          Horarios com Mais Cancelamentos
+                          Horários com Mais Cancelamentos
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -1806,7 +1806,7 @@ export default function RelatoriosPage() {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Codigo</TableHead>
+                              <TableHead>Código</TableHead>
                               <TableHead>Produto</TableHead>
                               <TableHead className="text-right">Qtd</TableHead>
                               <TableHead className="text-right">Valor</TableHead>
@@ -1839,7 +1839,7 @@ export default function RelatoriosPage() {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Numero</TableHead>
+                              <TableHead>Número</TableHead>
                               <TableHead>Data/Hora</TableHead>
                               <TableHead>Cliente</TableHead>
                               <TableHead>Operador</TableHead>
@@ -1879,7 +1879,7 @@ export default function RelatoriosPage() {
                           <TableHeader>
                             <TableRow>
                               <TableHead>Tipo</TableHead>
-                              <TableHead>Numero</TableHead>
+                              <TableHead>Número</TableHead>
                               <TableHead>Emitida em</TableHead>
                               <TableHead>Cancelada em</TableHead>
                               <TableHead>Motivo</TableHead>
@@ -1916,7 +1916,7 @@ export default function RelatoriosPage() {
               {!relatorioCancelamentos && !loading && (
                 <div className="text-center py-12 text-muted-foreground">
                   <XCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Clique em "Gerar Relatorio" para ver os cancelamentos</p>
+                  <p>Clique em "Gerar Relatório" para ver os cancelamentos</p>
                 </div>
               )}
             </CardContent>
