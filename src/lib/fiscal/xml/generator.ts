@@ -300,7 +300,8 @@ function gerarXMLBase(dados: any): string {
   // NFC-e: QR Code
   if (isNFCe && dados.urlQRCode) {
     const infNFeSupl = doc.up().ele('infNFeSupl')
-    infNFeSupl.ele('qrCode').txt(`<![CDATA[${dados.urlQRCode}]]>`)
+    // Usa .dat() para inserir como CDATA corretamente
+    infNFeSupl.ele('qrCode').dat(dados.urlQRCode)
     infNFeSupl.ele('urlChave').txt(dados.urlConsulta)
   }
 
@@ -326,16 +327,14 @@ export function gerarEnvelopeSOAP(xmlAssinado: string, servico: string): string 
 
 /**
  * Gera lote para envio
+ * O XML assinado é inserido diretamente como string (não como CDATA)
  */
 export function gerarLoteEnvio(xmlAssinado: string, idLote: string): string {
-  const lote = create({ version: '1.0', encoding: 'UTF-8' })
-    .ele('enviNFe', {
-      xmlns: 'http://www.portalfiscal.inf.br/nfe',
-      versao: VERSAO_NFE,
-    })
-    .ele('idLote').txt(idLote).up()
-    .ele('indSinc').txt('1').up() // 1=Síncrono
-    .dat(xmlAssinado)
+  // Remove a declaração XML do xmlAssinado se existir, pois já teremos uma no lote
+  const xmlLimpo = xmlAssinado.replace(/<\?xml[^?]*\?>\s*/gi, '')
 
-  return lote.end({ prettyPrint: false })
+  // Monta o lote manualmente para garantir que o XML assinado seja inserido corretamente
+  const loteXML = `<enviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="${VERSAO_NFE}"><idLote>${idLote}</idLote><indSinc>1</indSinc>${xmlLimpo}</enviNFe>`
+
+  return loteXML
 }
