@@ -18,8 +18,10 @@ interface PagamentoRecibo {
 interface DadosRecibo {
   // Empresa
   empresa: {
-    nome: string
+    nome: string // Nome Fantasia
+    razaoSocial?: string // Razao Social (obrigatorio para NFC-e)
     cnpj: string
+    inscricaoEstadual?: string // IE (obrigatorio para NFC-e)
     endereco?: string
     cidade?: string
     uf?: string
@@ -36,6 +38,7 @@ interface DadosRecibo {
   subtotal: number
   desconto: number
   total: number
+  qtdItens?: number // Quantidade total de itens
   // Tributos (Lei 12.741/2012 - IBPT)
   valorTributos?: number
   percentualTributos?: number
@@ -43,15 +46,21 @@ interface DadosRecibo {
   pagamentos: PagamentoRecibo[]
   valorRecebido?: number
   troco?: number
-  // NFC-e
+  // NFC-e (dados obrigatorios conforme Manual DANFE NFC-e)
   nfce?: {
+    numero?: number // Numero da NFC-e
+    serie?: number // Serie da NFC-e
     chave?: string
     protocolo?: string
+    dataEmissao?: Date // Data/hora de emissao
+    dataAutorizacao?: Date // Data/hora de autorizacao
+    qrCodeUrl?: string // URL completa do QR Code
+    urlConsulta?: string // URL de consulta por UF
   }
-  // Cliente
+  // Cliente/Consumidor
   cliente?: {
     nome?: string
-    cpf?: string
+    cpf?: string // CPF ou CNPJ
     telefone?: string
     cidade?: string
     veiculo?: string
@@ -92,6 +101,24 @@ function formatCNPJ(cnpj: string): string {
 function formatCPF(cpf: string): string {
   const cleaned = cpf.replace(/\D/g, '')
   return cleaned.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')
+}
+
+// Formata Chave de Acesso em grupos de 4 digitos
+function formatChaveAcesso(chave: string): string {
+  if (!chave) return ''
+  return chave.replace(/(\d{4})/g, '$1 ').trim()
+}
+
+// Formata telefone com DDD
+function formatTelefone(tel: string): string {
+  if (!tel) return ''
+  const cleaned = tel.replace(/\D/g, '')
+  if (cleaned.length === 11) {
+    return `(${cleaned.slice(0, 2)})${cleaned.slice(2, 7)}-${cleaned.slice(7)}`
+  } else if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 2)})${cleaned.slice(2, 6)}-${cleaned.slice(6)}`
+  }
+  return tel
 }
 
 // Mapa de formas de pagamento
@@ -365,11 +392,11 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
     empresa,
     numero,
     data,
-    operador,
     itens,
     subtotal,
     desconto,
     total,
+    qtdItens,
     valorTributos,
     percentualTributos,
     pagamentos,
@@ -381,26 +408,28 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
 
   const maxChars = largura === '58mm' ? 32 : 42
   const separador = '-'.repeat(maxChars)
-  // Fontes maiores e mais pesadas para impressora termica
   const fontSize = largura === '58mm' ? '12px' : '13px'
   const fontSizeSmall = largura === '58mm' ? '10px' : '11px'
   const fontSizeLarge = largura === '58mm' ? '14px' : '15px'
+
+  // Verificar se e NFC-e (com chave)
+  const isNFCe = !!nfce?.chave
 
   function truncate(text: string, max: number): string {
     return text.length > max ? text.substring(0, max - 1) + '.' : text
   }
 
-  // Formata CEP
   function formatCEP(cep: string): string {
     const cleaned = cep.replace(/\D/g, '')
     return cleaned.replace(/^(\d{5})(\d{3})$/, '$1-$2')
   }
 
+  // URL de consulta por UF (padrao SC)
+  const urlConsulta = nfce?.urlConsulta ||
+    (empresa.uf === 'SC' ? 'https://sat.sef.sc.gov.br/nfce/consulta' : 'www.nfce.fazenda.gov.br/portal')
+
   // Montar endereco completo
-  let enderecoCompleto = ''
-  if (empresa.endereco) {
-    enderecoCompleto = empresa.endereco
-  }
+  let enderecoCompleto = empresa.endereco || ''
   let cidadeUfCep = ''
   if (empresa.cidade || empresa.uf || empresa.cep) {
     const parts = []
@@ -412,41 +441,32 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
     }
   }
 
+  // Formatar numero da NFC-e com zeros a esquerda
+  const numeroNFCe = nfce?.numero ? String(nfce.numero).padStart(9, '0') : ''
+  const serieNFCe = nfce?.serie ? String(nfce.serie).padStart(3, '0') : ''
+
+  // Calcular quantidade total de itens se nao fornecido
+  const totalItens = qtdItens ?? itens.length
+
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Cupom ${numero || ''}</title>
+      <title>${isNFCe ? `NFC-e ${numeroNFCe}` : `Cupom ${numero || ''}`}</title>
       <style>
-        /* Reset e configurações para impressora térmica */
         * {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
-          color-adjust: exact !important;
         }
-
         @media print {
-          @page {
-            size: ${largura} auto;
-            margin: 2mm 4mm;
-          }
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: ${largura} !important;
-          }
-          /* Forçar cor preta em impressão */
-          * {
-            color: #000000 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
+          @page { size: ${largura} auto; margin: 2mm 4mm; }
+          html, body { margin: 0 !important; padding: 0 !important; width: ${largura} !important; }
+          * { color: #000000 !important; }
         }
-
         body {
           font-family: 'Courier New', Courier, monospace;
           font-size: ${fontSize};
@@ -455,195 +475,162 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
           width: ${largura};
           padding: 2mm 4mm;
           margin: 0 auto;
-          background: #ffffff;
-          color: #000000;
-          -webkit-font-smoothing: none;
-          text-rendering: geometricPrecision;
+          background: #fff;
+          color: #000;
           text-transform: uppercase;
         }
-
-        /* Classes de texto - pesos fortes para impressora termica */
         .center { text-align: center; }
         .bold { font-weight: 800 !important; }
         .extra-bold { font-weight: 900 !important; }
-        .separator { margin: 3px 0; font-weight: 800; letter-spacing: -1px; }
+        .sep { margin: 3px 0; font-weight: 800; letter-spacing: -1px; }
         .flex { display: flex; justify-content: space-between; }
         .small { font-size: ${fontSizeSmall}; font-weight: 600; }
+        .xsmall { font-size: 9px; font-weight: 600; }
         .large { font-size: ${fontSizeLarge}; font-weight: 900; }
         .item { margin-bottom: 3px; }
         .item-detail { padding-left: 12px; font-weight: 700; }
         .break-all { word-break: break-all; }
-
-        /* Secao cliente */
-        .cliente-info {
-          margin: 4px 0;
-          font-size: ${fontSizeSmall};
-          font-weight: 600;
-        }
-        .cliente-info div {
-          margin: 2px 0;
-        }
-
-        /* QR Code placeholder */
-        .qr-placeholder {
-          border: 2px solid #000000;
-          padding: 8px;
-          margin: 6px 0;
-          text-align: center;
-          font-weight: 700;
-        }
-
-        /* Tributos */
-        .tributos {
-          margin-top: 4px;
-          padding: 4px;
-          border: 2px solid #000000;
-          font-size: ${fontSizeSmall};
-          font-weight: 700;
-        }
-
-        /* Garantir que linhas horizontais apareçam */
-        .line {
-          border: none;
-          border-top: 1px solid #000000;
-          margin: 4px 0;
-        }
+        .tributos { margin-top: 4px; padding: 4px; border: 2px solid #000; font-size: ${fontSizeSmall}; }
+        .qrcode { width: 120px; height: 120px; margin: 6px auto; display: block; }
       </style>
     </head>
     <body>
-      <!-- Header da Empresa -->
+      <!-- CABECALHO EMPRESA - Padrao SEFAZ -->
       <div class="center">
-        <div class="extra-bold large">${truncate(empresa.nome, maxChars)}</div>
+        <div class="bold">CNPJ: ${formatCNPJ(empresa.cnpj)} ${empresa.razaoSocial || empresa.nome}</div>
         ${enderecoCompleto ? `<div class="small">${truncate(enderecoCompleto, maxChars)}</div>` : ''}
         ${cidadeUfCep ? `<div class="small">${truncate(cidadeUfCep, maxChars)}</div>` : ''}
-        <div class="bold">CNPJ: ${formatCNPJ(empresa.cnpj)}</div>
-        ${empresa.telefone ? `<div>Fone: ${empresa.telefone}</div>` : ''}
+        ${empresa.telefone ? `<div class="small">Fone:${formatTelefone(empresa.telefone)} ${empresa.inscricaoEstadual ? `I.E.:${empresa.inscricaoEstadual}` : ''}</div>` : ''}
+        ${!empresa.telefone && empresa.inscricaoEstadual ? `<div class="small">I.E.:${empresa.inscricaoEstadual}</div>` : ''}
       </div>
 
-      <div class="separator bold">${separador}</div>
+      <div class="sep">${separador}</div>
 
-      <div class="center extra-bold">${nfce?.chave ? 'NFC-e - DANFE' : 'CUPOM NÃO FISCAL'}</div>
-
-      <div class="separator bold">${separador}</div>
-
-      <!-- Info venda -->
-      <div class="flex bold">
-        <span>Venda: ${numero || '---'}</span>
-        <span>${formatDateTime(data)}</span>
-      </div>
-      <div>Operador: ${truncate(operador, maxChars - 10)}</div>
-
-      ${cliente && (cliente.nome || cliente.cpf || cliente.telefone || cliente.cidade || cliente.veiculo) ? `
-        <div class="separator bold">${separador}</div>
-        <div class="cliente-info">
-          ${cliente.nome ? `<div><span class="bold">Cliente:</span> ${truncate(cliente.nome, maxChars - 9)}</div>` : ''}
-          ${cliente.cpf ? `<div><span class="bold">CPF/CNPJ:</span> ${cliente.cpf.length > 11 ? formatCNPJ(cliente.cpf) : formatCPF(cliente.cpf)}</div>` : ''}
-          ${cliente.telefone ? `<div><span class="bold">Fone:</span> ${cliente.telefone}</div>` : ''}
-          ${cliente.cidade ? `<div><span class="bold">Cidade:</span> ${cliente.cidade}</div>` : ''}
-          ${cliente.veiculo ? `<div><span class="bold">Veiculo:</span> ${cliente.veiculo}</div>` : ''}
-        </div>
-      ` : ''}
-
-      <div class="separator bold">${separador}</div>
-
-      <!-- Header itens -->
-      <div class="extra-bold">
-        ${largura === '58mm'
-          ? '<div>ITEM DESCRIÇÃO</div><div>QTD x VALOR = TOTAL</div>'
-          : '<div class="flex"><span>ITEM</span><span>QTD x VALOR</span><span>TOTAL</span></div>'
-        }
+      <!-- TITULO DO DOCUMENTO -->
+      <div class="center bold">
+        ${isNFCe ? 'Documento Auxiliar da Nota Fiscal de Consumidor Eletronica' : 'CUPOM NAO FISCAL'}
       </div>
 
-      <div class="separator bold">${separador}</div>
+      <div class="sep">${separador}</div>
 
-      <!-- Itens -->
+      <!-- CABECALHO ITENS - Padrao SEFAZ -->
+      <div class="small bold">
+        <div># Codigo Descricao Qtde Un Valor unit. Valor total</div>
+      </div>
+
+      <!-- ITENS -->
       ${itens.map((item, index) => `
         <div class="item">
-          <div class="bold">${String(index + 1).padStart(3, '0')} ${truncate(item.nome, maxChars - 4)}</div>
-          <div class="flex item-detail">
-            <span>${item.quantidade.toFixed(2)} x ${formatCurrency(item.preco)}</span>
+          <div class="bold">${String(index + 1).padStart(3, '0')} ${item.codigo || ''} ${truncate(item.nome, maxChars - 8)}</div>
+          <div class="flex item-detail small">
+            <span>${item.quantidade} UN X ${formatCurrency(item.preco)}</span>
             <span class="extra-bold">${formatCurrency(item.total)}</span>
           </div>
         </div>
       `).join('')}
 
-      <div class="separator bold">${separador}</div>
-
-      <!-- Totais -->
-      <div class="flex bold">
-        <span>SUBTOTAL:</span>
-        <span>${formatCurrency(subtotal)}</span>
-      </div>
       ${desconto > 0 ? `
-        <div class="flex bold">
-          <span>DESCONTO:</span>
+        <div class="flex small">
+          <span>Desconto</span>
           <span>-${formatCurrency(desconto)}</span>
         </div>
       ` : ''}
-      <div class="flex extra-bold large" style="margin-top: 3px;">
-        <span>TOTAL:</span>
+
+      <div class="sep">${separador}</div>
+
+      <!-- TOTAIS - Padrao SEFAZ -->
+      <div class="flex small">
+        <span>Qtde. total de itens</span>
+        <span>${String(totalItens).padStart(3, '0')}</span>
+      </div>
+      <div class="flex bold">
+        <span>Valor total R$</span>
+        <span>${formatCurrency(subtotal)}</span>
+      </div>
+      ${desconto > 0 ? `
+        <div class="flex">
+          <span>Desconto total</span>
+          <span>-${formatCurrency(desconto)}</span>
+        </div>
+      ` : ''}
+      <div class="flex extra-bold large">
+        <span>Valor a Pagar R$</span>
         <span>${formatCurrency(total)}</span>
       </div>
 
-      ${valorTributos && valorTributos > 0 ? `
-        <!-- Tributos - Lei 12.741/2012 (IBPT) -->
-        <div class="tributos">
-          <div class="bold">
-            Val. Aprox. Tributos: ${formatCurrency(valorTributos)}${percentualTributos ? ` (${percentualTributos.toFixed(2)}%)` : ''}
-          </div>
-          <div class="small">Fonte: IBPT - Lei 12.741/2012</div>
-        </div>
-      ` : ''}
+      <div class="sep">${separador}</div>
 
-      <div class="separator bold">${separador}</div>
-
-      <!-- Pagamentos -->
-      <div class="extra-bold">PAGAMENTO:</div>
+      <!-- FORMA DE PAGAMENTO -->
+      <div class="bold">FORMA DE PAGAMENTO</div>
       ${pagamentos.map(pag => `
-        <div class="flex bold">
-          <span>${formasPagamento[pag.forma] || pag.forma.toUpperCase()}</span>
-          <span>${formatCurrency(pag.valor)}</span>
+        <div class="flex">
+          <span>${formasPagamento[pag.forma] || pag.forma}</span>
+          <span>VALOR PAGO R$ ${formatCurrency(pag.valor)}</span>
         </div>
       `).join('')}
-      ${valorRecebido && valorRecebido > 0 ? `
-        <div class="flex">
-          <span>Valor Recebido:</span>
-          <span>${formatCurrency(valorRecebido)}</span>
-        </div>
-      ` : ''}
       ${troco && troco > 0 ? `
-        <div class="flex extra-bold large">
-          <span>TROCO:</span>
+        <div class="flex bold">
+          <span>Troco R$</span>
           <span>${formatCurrency(troco)}</span>
         </div>
       ` : ''}
 
-      ${nfce?.chave ? `
-        <div class="separator bold">${separador}</div>
+      <div class="sep">${separador}</div>
+
+      <!-- CONSULTA E CHAVE DE ACESSO -->
+      ${isNFCe ? `
         <div class="center small">
-          <div class="extra-bold">CHAVE DE ACESSO</div>
-          <div class="break-all bold">${nfce.chave}</div>
-          ${nfce.protocolo ? `<div class="bold" style="margin-top: 3px;">Protocolo: ${nfce.protocolo}</div>` : ''}
-          <div style="margin-top: 3px;">Consulte em www.nfce.fazenda.gov.br</div>
+          <div>Consulte pela Chave de Acesso em</div>
+          <div class="bold">${urlConsulta}</div>
+          <div class="break-all bold" style="margin-top: 4px; letter-spacing: 1px;">
+            ${formatChaveAcesso(nfce.chave || '')}
+          </div>
         </div>
-        <div class="qr-placeholder">[QR CODE]</div>
+
+        <div class="sep">${separador}</div>
+
+        <!-- CONSUMIDOR -->
+        <div class="center bold">
+          ${cliente?.cpf ? `CONSUMIDOR CPF: ${cliente.cpf.length > 11 ? formatCNPJ(cliente.cpf) : formatCPF(cliente.cpf)}` : 'CONSUMIDOR NAO IDENTIFICADO'}
+        </div>
+        ${cliente?.nome ? `<div class="center small">${truncate(cliente.nome, maxChars)}</div>` : ''}
+
+        <div class="sep">${separador}</div>
+
+        <!-- DADOS DA NFC-e -->
+        <div class="center small">
+          <div>NFC-e no ${numeroNFCe} Serie ${serieNFCe} ${nfce.dataEmissao ? formatDateTime(nfce.dataEmissao) : formatDateTime(data)}</div>
+          ${nfce.protocolo ? `<div>Protocolo de Autorizacao: ${nfce.protocolo}</div>` : ''}
+          ${nfce.dataAutorizacao ? `<div>Data de Autorizacao ${formatDateTime(nfce.dataAutorizacao)}</div>` : ''}
+        </div>
+
+        <div class="sep">${separador}</div>
+
+        <!-- QR CODE -->
+        <div class="center">
+          ${nfce.qrCodeUrl ? `
+            <img class="qrcode" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(nfce.qrCodeUrl)}" alt="QR Code" />
+          ` : '<div style="border: 1px dashed #000; padding: 20px; margin: 6px 0;">[QR CODE]</div>'}
+        </div>
+      ` : `
+        <!-- CUPOM NAO FISCAL -->
+        <div class="center small">
+          <div>Venda: ${numero || '---'}</div>
+          <div>${formatDateTime(data)}</div>
+        </div>
+      `}
+
+      <!-- TRIBUTOS - Lei 12.741/2012 (IBPT) -->
+      ${valorTributos && valorTributos > 0 ? `
+        <div class="sep">${separador}</div>
+        <div class="center small">
+          <div>Val Aprox Tributos R$ ${formatCurrency(valorTributos)} (${percentualTributos?.toFixed(2) || '0.00'}%) Fonte:IBPT</div>
+        </div>
       ` : ''}
-
-      <div class="separator bold">${separador}</div>
-
-      <!-- Rodapé -->
-      <div class="center">
-        <div class="extra-bold" style="margin-top: 3px;">OBRIGADO PELA PREFERÊNCIA!</div>
-        <div class="bold small" style="margin-top: 3px;">Volte sempre!</div>
-        <div class="bold" style="font-size: 8px; margin-top: 6px;">Imperio Sistemas</div>
-      </div>
 
       <script>
         window.onload = function() {
-          // Aguarda um momento para renderizar e então imprime
-          setTimeout(function() {
-            window.print();
-          }, 250);
+          setTimeout(function() { window.print(); }, 300);
         }
       </script>
     </body>

@@ -21,6 +21,7 @@ export interface ResultadoEmissao {
   xml?: string
   mensagem: string
   codigo?: string
+  qrCodeUrl?: string // URL do QR Code para DANFE NFC-e
 }
 
 /**

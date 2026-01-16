@@ -142,6 +142,9 @@ export async function POST(request: NextRequest) {
     if (resultado.sucesso) {
       // Atualiza último número no banco
       const novoNumero = servicoFiscal.getConfig().ultimoNumeroNFCe
+      const serieNFCe = configFiscal.serie_nfce || 1
+      const dataEmissao = new Date().toISOString()
+
       await supabase
         .from('empresas')
         .update({
@@ -156,14 +159,24 @@ export async function POST(request: NextRequest) {
       await supabase.from('notas_fiscais').insert({
         empresa_id: userData.empresa_id,
         tipo: 'nfce',
-        serie: configFiscal.serie_nfce || 1,
+        serie: serieNFCe,
         numero: novoNumero,
         chave: resultado.chave,
         protocolo: resultado.protocolo,
         xml: resultado.xml,
         status: 'autorizada',
         valor_total: valorTotal,
-        emitida_em: new Date().toISOString(),
+        emitida_em: dataEmissao,
+      })
+
+      // Retorna resposta com dados completos para DANFE
+      return NextResponse.json({
+        ...resultado,
+        numero: novoNumero,
+        serie: serieNFCe,
+        dataEmissao,
+        dataAutorizacao: dataEmissao, // Em homologacao, mesma data
+        qrCodeUrl: resultado.qrCodeUrl || undefined,
       })
     }
 

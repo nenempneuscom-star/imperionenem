@@ -187,7 +187,7 @@ export default function PDVPage() {
 
         const { data: empresaData } = await supabase
           .from('empresas')
-          .select('razao_social, nome_fantasia, cnpj, endereco, telefone, config_fiscal')
+          .select('razao_social, nome_fantasia, cnpj, ie, endereco, telefone, config_fiscal')
           .eq('id', usuario.empresa_id)
           .single()
 
@@ -217,7 +217,9 @@ export default function PDVPage() {
 
           setEmpresa({
             nome: empresaData.nome_fantasia || empresaData.razao_social,
+            razaoSocial: empresaData.razao_social || undefined,
             cnpj: empresaData.cnpj,
+            inscricaoEstadual: empresaData.ie || undefined,
             endereco: enderecoFormatado || undefined,
             cidade: cidade || undefined,
             uf: uf || undefined,
@@ -1157,7 +1159,9 @@ export default function PDVPage() {
     const dadosRecibo: DadosRecibo = {
       empresa: {
         nome: empresaData.nome,
+        razaoSocial: empresaData.razaoSocial,
         cnpj: empresaData.cnpj,
+        inscricaoEstadual: empresaData.inscricaoEstadual,
         endereco: empresaData.endereco,
         cidade: empresaData.cidade,
         uf: empresaData.uf,
@@ -1171,13 +1175,23 @@ export default function PDVPage() {
       subtotal: vendaFinalizada.subtotal,
       desconto: vendaFinalizada.desconto,
       total: vendaFinalizada.total,
+      qtdItens: vendaFinalizada.itens.reduce((acc, item) => acc + item.quantidade, 0),
       valorTributos: vendaFinalizada.valorTributos,
       percentualTributos: vendaFinalizada.percentualTributos,
       pagamentos: vendaFinalizada.pagamentos,
       valorRecebido: vendaFinalizada.valorRecebido,
       troco: vendaFinalizada.troco,
       nfce: nfceResult?.sucesso
-        ? { chave: nfceResult.chave, protocolo: nfceResult.protocolo }
+        ? {
+            numero: nfceResult.numero,
+            serie: nfceResult.serie,
+            chave: nfceResult.chave,
+            protocolo: nfceResult.protocolo,
+            dataEmissao: nfceResult.dataEmissao ? new Date(nfceResult.dataEmissao) : undefined,
+            dataAutorizacao: nfceResult.dataAutorizacao ? new Date(nfceResult.dataAutorizacao) : undefined,
+            qrCodeUrl: nfceResult.qrCodeUrl,
+            urlConsulta: empresaData.uf === 'SC' ? 'https://sat.sef.sc.gov.br/nfce/consulta' : undefined,
+          }
         : undefined,
       cliente: dadosCliente,
     }

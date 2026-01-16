@@ -49,6 +49,12 @@ export interface NFCeResult {
   chave?: string
   protocolo?: string
   mensagem: string
+  // Campos adicionais para DANFE padrao SEFAZ
+  numero?: number
+  serie?: number
+  dataEmissao?: string // ISO string
+  dataAutorizacao?: string // ISO string
+  qrCodeUrl?: string
 }
 
 export interface ConfigDesconto {
@@ -62,8 +68,10 @@ export interface ConfigDesconto {
 }
 
 export interface Empresa {
-  nome: string
+  nome: string // Nome Fantasia
+  razaoSocial?: string // Razao Social (obrigatorio para NFC-e)
   cnpj: string
+  inscricaoEstadual?: string // IE (obrigatorio para NFC-e)
   endereco?: string
   cidade?: string
   uf?: string
