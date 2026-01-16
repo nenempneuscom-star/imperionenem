@@ -312,19 +312,22 @@ export default function NFSePage() {
       <Card>
         <CardHeader>
           <CardTitle>Como emitir NFS-e em Capivari de Baixo</CardTitle>
+          <CardDescription>
+            Capivari de Baixo aderiu ao Emissor Nacional da NFSe a partir de 01/01/2026
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-4">
             <div>
               <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                <Badge variant="secondary">Recomendado</Badge>
-                Via ADN - Padrão Nacional
+                <Badge className="bg-green-600">Automático</Badge>
+                Via Sistema (API Nacional)
               </h4>
               <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground ml-2">
                 <li>Clique em "Emitir NFS-e" e mantenha a opção "Usar ADN" ativada</li>
                 <li>Preencha os dados do tomador e do serviço prestado</li>
                 <li>Clique em "Gerar RPS" - o sistema enviará automaticamente ao ADN</li>
-                <li>A nota será autorizada em segundos (ambiente de homologação para testes)</li>
+                <li>A nota será autorizada em segundos</li>
                 <li>Baixe o XML ou acesse o DANFSE pelo link fornecido</li>
               </ol>
             </div>
@@ -332,25 +335,55 @@ export default function NFSePage() {
             <Separator />
 
             <div>
-              <h4 className="font-medium text-sm mb-2">Via Portal da Prefeitura (modo legado)</h4>
+              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                <Badge variant="secondary">Manual</Badge>
+                Via Emissor Nacional Web (Governo Federal)
+              </h4>
               <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground ml-2">
-                <li>Clique em "Emitir NFS-e" e desative a opção "Usar ADN"</li>
-                <li>Preencha os dados e gere o RPS em formato XML</li>
-                <li>Baixe o XML clicando no botão de download</li>
                 <li>
-                  Acesse o portal da prefeitura:{' '}
+                  Acesse o{' '}
                   <a
-                    href="https://capivari-de-baixo-sc.prefeituramoderna.com.br/meuiss_new/nfe/index.php?cidade=capivari"
+                    href="https://www.nfse.gov.br/EmissorNacional"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline"
                   >
-                    Portal NFS-e Capivari de Baixo
+                    Emissor Nacional da NFSe
+                  </a>{' '}
+                  (portal gratuito do governo)
+                </li>
+                <li>Faça login com certificado digital ou Gov.br</li>
+                <li>Preencha os dados do serviço e tomador</li>
+                <li>Emita a nota diretamente pelo portal</li>
+                <li>
+                  Consulte notas emitidas em{' '}
+                  <a
+                    href="https://www.nfse.gov.br/consultapublica"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Consulta Pública
                   </a>
                 </li>
-                <li>Faça login e importe o arquivo XML ou digite os dados manualmente</li>
-                <li>Após autorização, atualize o status da nota no sistema</li>
               </ol>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h4 className="font-medium text-sm mb-2 text-muted-foreground">Via Portal da Prefeitura (legado - não recomendado)</h4>
+              <p className="text-xs text-muted-foreground ml-2">
+                O portal antigo da prefeitura será descontinuado. Use o Emissor Nacional ou o sistema.{' '}
+                <a
+                  href="https://capivari-de-baixo-sc.prefeituramoderna.com.br/meuiss_new/nfe/index.php?cidade=capivari"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Acessar portal antigo
+                </a>
+              </p>
             </div>
           </div>
         </CardContent>
