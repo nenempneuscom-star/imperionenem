@@ -6,6 +6,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -313,24 +314,45 @@ export default function NFSePage() {
           <CardTitle>Como emitir NFS-e em Capivari de Baixo</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-            <li>Clique em "Emitir NFS-e" e preencha os dados do serviço prestado</li>
-            <li>O sistema irá gerar o RPS (Recibo Provisório de Serviços) em formato XML</li>
-            <li>Baixe o XML clicando no botão de download</li>
-            <li>
-              Acesse o portal da prefeitura:{' '}
-              <a
-                href="https://capivari-de-baixo-sc.prefeituramoderna.com.br/meuiss_new/nfe/index.php?cidade=capivari"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                Portal NFS-e Capivari de Baixo
-              </a>
-            </li>
-            <li>Faça login e importe o arquivo XML ou digite os dados manualmente</li>
-            <li>Após autorização, atualize o status da nota no sistema</li>
-          </ol>
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                <Badge variant="secondary">Recomendado</Badge>
+                Via ADN - Padrão Nacional
+              </h4>
+              <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground ml-2">
+                <li>Clique em "Emitir NFS-e" e mantenha a opção "Usar ADN" ativada</li>
+                <li>Preencha os dados do tomador e do serviço prestado</li>
+                <li>Clique em "Gerar RPS" - o sistema enviará automaticamente ao ADN</li>
+                <li>A nota será autorizada em segundos (ambiente de homologação para testes)</li>
+                <li>Baixe o XML ou acesse o DANFSE pelo link fornecido</li>
+              </ol>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h4 className="font-medium text-sm mb-2">Via Portal da Prefeitura (modo legado)</h4>
+              <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground ml-2">
+                <li>Clique em "Emitir NFS-e" e desative a opção "Usar ADN"</li>
+                <li>Preencha os dados e gere o RPS em formato XML</li>
+                <li>Baixe o XML clicando no botão de download</li>
+                <li>
+                  Acesse o portal da prefeitura:{' '}
+                  <a
+                    href="https://capivari-de-baixo-sc.prefeituramoderna.com.br/meuiss_new/nfe/index.php?cidade=capivari"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Portal NFS-e Capivari de Baixo
+                  </a>
+                </li>
+                <li>Faça login e importe o arquivo XML ou digite os dados manualmente</li>
+                <li>Após autorização, atualize o status da nota no sistema</li>
+              </ol>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
