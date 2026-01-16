@@ -508,14 +508,14 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
 
       <!-- TITULO DO DOCUMENTO -->
       <div class="center bold">
-        ${isNFCe ? 'Documento Auxiliar da Nota Fiscal de Consumidor Eletronica' : 'CUPOM NAO FISCAL'}
+        ${isNFCe ? 'Documento Auxiliar da Nota Fiscal de Consumidor Eletrônica' : 'CUPOM NÃO FISCAL'}
       </div>
 
       <div class="sep">${separador}</div>
 
       <!-- CABECALHO ITENS - Padrao SEFAZ -->
       <div class="small bold">
-        <div># Codigo Descricao Qtde Un Valor unit. Valor total</div>
+        <div># Código Descrição Qtde Un Valor unit. Valor total</div>
       </div>
 
       <!-- ITENS -->
@@ -591,7 +591,7 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
 
         <!-- CONSUMIDOR -->
         <div class="center bold">
-          ${cliente?.cpf ? `CONSUMIDOR CPF: ${cliente.cpf.length > 11 ? formatCNPJ(cliente.cpf) : formatCPF(cliente.cpf)}` : 'CONSUMIDOR NAO IDENTIFICADO'}
+          ${cliente?.cpf ? `CONSUMIDOR CPF: ${cliente.cpf.length > 11 ? formatCNPJ(cliente.cpf) : formatCPF(cliente.cpf)}` : 'CONSUMIDOR NÃO IDENTIFICADO'}
         </div>
         ${cliente?.nome ? `<div class="center small">${truncate(cliente.nome, maxChars)}</div>` : ''}
 
@@ -599,9 +599,9 @@ export function printReceipt({ dados, largura = '80mm' }: PrintReceiptProps) {
 
         <!-- DADOS DA NFC-e -->
         <div class="center small">
-          <div>NFC-e no ${numeroNFCe} Serie ${serieNFCe} ${nfce.dataEmissao ? formatDateTime(nfce.dataEmissao) : formatDateTime(data)}</div>
-          ${nfce.protocolo ? `<div>Protocolo de Autorizacao: ${nfce.protocolo}</div>` : ''}
-          ${nfce.dataAutorizacao ? `<div>Data de Autorizacao ${formatDateTime(nfce.dataAutorizacao)}</div>` : ''}
+          <div>NFC-e nº ${numeroNFCe} Série ${serieNFCe} ${nfce.dataEmissao ? formatDateTime(nfce.dataEmissao) : formatDateTime(data)}</div>
+          ${nfce.protocolo ? `<div>Protocolo de Autorização: ${nfce.protocolo}</div>` : ''}
+          ${nfce.dataAutorizacao ? `<div>Data de Autorização ${formatDateTime(nfce.dataAutorizacao)}</div>` : ''}
         </div>
 
         <div class="sep">${separador}</div>
