@@ -26,7 +26,6 @@ export interface ConfigFiscal {
   regime_tributario: string
   ambiente: string
   serie_nfce: string
-  numero_nfce: number
   serie_nfe: string
   numero_nfe: number
 }
@@ -51,7 +50,6 @@ export interface FormDataConfiguracoes {
   regime_tributario: string
   ambiente: string
   serie_nfce: string
-  numero_nfce: string
   serie_nfe: string
   numero_nfe: string
   // PIX
@@ -75,7 +73,6 @@ export const initialFormData: FormDataConfiguracoes = {
   regime_tributario: '1',
   ambiente: '2',
   serie_nfce: '1',
-  numero_nfce: '1',
   serie_nfe: '1',
   numero_nfe: '1',
   chave_pix: '',

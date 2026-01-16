@@ -73,31 +73,20 @@ export function FiscalTab({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="serie_nfce">Serie</Label>
-              <Input
-                id="serie_nfce"
-                name="serie_nfce"
-                type="number"
-                min="1"
-                value={formData.serie_nfce}
-                onChange={onChange}
-                disabled={saving}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="numero_nfce">Proximo Numero</Label>
-              <Input
-                id="numero_nfce"
-                name="numero_nfce"
-                type="number"
-                min="1"
-                value={formData.numero_nfce}
-                onChange={onChange}
-                disabled={saving}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="serie_nfce">Serie</Label>
+            <Input
+              id="serie_nfce"
+              name="serie_nfce"
+              type="number"
+              min="1"
+              value={formData.serie_nfce}
+              onChange={onChange}
+              disabled={saving}
+            />
+            <p className="text-xs text-muted-foreground">
+              Para configurar numeracao e CSC, acesse Fiscal &gt; Configuracoes
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -156,9 +156,9 @@ export async function POST(request: NextRequest) {
       regime_tributario: '1',  // Simples Nacional
       ambiente: '2',           // Homologação
       serie_nfce: '1',
-      numero_nfce: 1,
+      ultimo_numero_nfce: 0,
       serie_nfe: '1',
-      numero_nfe: 1,
+      ultimo_numero_nfe: 0,
       csc_nfce: null,
       id_token_nfce: null,
       certificado_base64: null,

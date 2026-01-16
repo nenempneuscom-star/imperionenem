@@ -147,7 +147,6 @@ export default function ConfiguracoesPage() {
           regime_tributario: empresaData.config_fiscal?.regime_tributario || '1',
           ambiente: empresaData.config_fiscal?.ambiente || '2',
           serie_nfce: empresaData.config_fiscal?.serie_nfce || '1',
-          numero_nfce: empresaData.config_fiscal?.numero_nfce?.toString() || '1',
           serie_nfe: empresaData.config_fiscal?.serie_nfe || '1',
           numero_nfe: empresaData.config_fiscal?.numero_nfe?.toString() || '1',
           // PIX
@@ -284,7 +283,6 @@ export default function ConfiguracoesPage() {
         regime_tributario: formData.regime_tributario,
         ambiente: formData.ambiente,
         serie_nfce: formData.serie_nfce,
-        numero_nfce: parseInt(formData.numero_nfce) || 1,
         serie_nfe: formData.serie_nfe,
         numero_nfe: parseInt(formData.numero_nfe) || 1,
         chave_pix: formData.chave_pix || null,
